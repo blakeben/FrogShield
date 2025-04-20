@@ -13,20 +13,23 @@ class RealtimeMonitor:
     """
     Monitors LLM outputs and behavior for signs of successful prompt injections.
     """
-    DEFAULT_AVG_LENGTH = 50 # Default average response length for initial behavior check
-    DEFAULT_SENSITIVITY_THRESHOLD = 0.8
-    _BEHAVIOR_MONITORING_FACTOR = 2 # Factor applied to sensitivity for length deviation check
-
-    def __init__(self, sensitivity_threshold=DEFAULT_SENSITIVITY_THRESHOLD):
+    def __init__(self, sensitivity_threshold, initial_avg_length, behavior_monitoring_factor):
         """
         Initializes the RealtimeMonitor.
 
         Args:
             sensitivity_threshold (float): Threshold for anomaly detection (0.0 to 1.0).
                                            Higher means more sensitive.
+            initial_avg_length (int): Starting average length for baseline behavior.
+            behavior_monitoring_factor (float): Factor applied to sensitivity for deviation check.
         """
         self.sensitivity = sensitivity_threshold
-        self.baseline_behavior = {} # Store normal behavior patterns (e.g., response length, topic)
+        self.baseline_behavior = {
+            'avg_length': float(initial_avg_length), # Start baseline with config value
+            'count': 0,       # Initialize count and total_length for proper updates
+            'total_length': 0.0
+        }
+        self._behavior_monitoring_factor = behavior_monitoring_factor
         self.alert_log = []
 
     def analyze_output(self, prompt, response):
@@ -80,11 +83,15 @@ class RealtimeMonitor:
         logger.debug("Monitoring behavior...")
         # Placeholder: Very basic check on response length deviation
         current_length = len(response)
-        avg_length = self.baseline_behavior.get('avg_length', self.DEFAULT_AVG_LENGTH)
+        avg_length = self.baseline_behavior.get('avg_length')
+        # avg_length should always exist after initialization
+        if avg_length is None: # Defensive check
+            logger.error("Baseline average length not initialized!")
+            return False
 
         # Calculate deviation bounds based on sensitivity and factor
-        upper_bound = avg_length * (1 + self.sensitivity * self._BEHAVIOR_MONITORING_FACTOR)
-        lower_bound = avg_length * (1 - self.sensitivity * self._BEHAVIOR_MONITORING_FACTOR)
+        upper_bound = avg_length * (1 + self.sensitivity * self._behavior_monitoring_factor)
+        lower_bound = avg_length * (1 - self.sensitivity * self._behavior_monitoring_factor)
 
         if current_length > upper_bound or current_length < lower_bound:
             logger.info(f"Behavior anomaly detected: Length ({current_length}) deviates from avg ({avg_length:.0f}).")
@@ -106,7 +113,8 @@ class RealtimeMonitor:
         if self.baseline_behavior['count'] > 0:
              self.baseline_behavior['avg_length'] = self.baseline_behavior['total_length'] / self.baseline_behavior['count']
         else:
-             self.baseline_behavior['avg_length'] = self.DEFAULT_AVG_LENGTH # Reset or keep old?
+            # This case should ideally not be reached if initialized correctly
+            logger.warning("Updating baseline with count 0, avg_length remains initial.")
 
     def adaptive_response(self, detection_type):
         """

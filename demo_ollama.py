@@ -8,6 +8,7 @@ import ollama # Import the ollama library
 import logging
 
 from frogshield import InputValidator, RealtimeMonitor, ModelHardener
+from frogshield.utils import config_loader
 
 # --- Basic Logging Setup --- #
 # Configure logging to show messages from FrogShield
@@ -16,6 +17,13 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 # logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 logger = logging.getLogger(__name__)
+
+# --- Load Configuration --- #
+try:
+    config = config_loader.load_config()
+except ImportError:
+    logging.error("PyYAML not installed. Run 'pip install -r requirements.txt'. Exiting.")
+    exit(1)
 
 # ---------------------------------------
 # 1. Local LLM Setup (Ollama Example)
@@ -67,8 +75,14 @@ def call_ollama_llm(prompt, model=LOCAL_MODEL_NAME):
 # ---------------------------------------
 
 logging.info("Initializing FrogShield components...")
-validator = InputValidator() # Uses default patterns and settings
-monitor = RealtimeMonitor(sensitivity_threshold=0.6) # Adjust sensitivity as needed
+validator = InputValidator(
+    context_window=config['InputValidator']['context_window']
+) # Uses default pattern loading
+monitor = RealtimeMonitor(
+    sensitivity_threshold=config['RealtimeMonitor']['sensitivity_threshold'],
+    initial_avg_length=config['RealtimeMonitor']['initial_avg_length'],
+    behavior_monitoring_factor=config['RealtimeMonitor']['behavior_monitoring_factor']
+) # Use config values
 hardener = ModelHardener()
 conversation_history = []
 

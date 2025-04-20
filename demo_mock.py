@@ -7,6 +7,7 @@ Contributors:
 
 import logging
 from frogshield import InputValidator, RealtimeMonitor
+from frogshield.utils import config_loader
 import time # For simulating LLM delay
 import random # For simulating variability
 # Note: ModelHardener is primarily for training data generation/testing, so not used in this runtime demo
@@ -18,6 +19,13 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 # To see more detailed DEBUG messages from FrogShield components, change level to logging.DEBUG
 # logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# --- Load Configuration --- #
+try:
+    config = config_loader.load_config()
+except ImportError:
+    logging.error("PyYAML not installed. Run 'pip install -r requirements.txt'. Exiting.")
+    exit(1)
 
 # ---------------------------------------
 # 1. Mock LLM Setup
@@ -61,8 +69,14 @@ def simple_llm(prompt):
 # ---------------------------------------
 
 logging.info("Initializing FrogShield components...")
-validator = InputValidator() # Uses default patterns and settings
-monitor = RealtimeMonitor(sensitivity_threshold=0.6) # Adjust sensitivity as needed
+validator = InputValidator(
+    context_window=config['InputValidator']['context_window']
+) # Uses default pattern loading
+monitor = RealtimeMonitor(
+    sensitivity_threshold=config['RealtimeMonitor']['sensitivity_threshold'],
+    initial_avg_length=config['RealtimeMonitor']['initial_avg_length'],
+    behavior_monitoring_factor=config['RealtimeMonitor']['behavior_monitoring_factor']
+) # Use config values
 conversation_history = []
 
 # ---------------------------------------

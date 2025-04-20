@@ -12,22 +12,22 @@ logger = logging.getLogger(__name__)
 # Note: The functions in this module are intentionally simple and only for demonstration.
 # Real-world implementations would require much more sophisticated analysis.
 
-# Constants for analyze_syntax
-_SYNTAX_NON_ALNUM_THRESHOLD = 0.3
-_SYNTAX_MAX_WORD_LENGTH = 50
-
-def analyze_syntax(text):
+def analyze_syntax(text, config):
     """
     Analyzes text for unusual syntax or hidden instructions.
     Placeholder implementation.
 
     Args:
         text (str): The input text to analyze.
+        config (dict): The loaded configuration dictionary (expects TextAnalysis section).
 
     Returns:
         bool: True if suspicious syntax is found, False otherwise.
     """
     logger.warning("analyze_syntax is using placeholder logic and is not suitable for production use.")
+    syntax_non_alnum_threshold = config['TextAnalysis']['syntax_non_alnum_threshold']
+    syntax_max_word_length = config['TextAnalysis']['syntax_max_word_length']
+
     text_length = len(text)
     if text_length == 0:
         return False # Empty string is not suspicious
@@ -37,7 +37,7 @@ def analyze_syntax(text):
     # 1. Excessive punctuation or special characters (crude measure)
     # Slightly optimized count
     non_alnum_count = text_length - sum(1 for char in text if char.isalnum() or char.isspace())
-    if non_alnum_count / text_length > _SYNTAX_NON_ALNUM_THRESHOLD:
+    if (non_alnum_count / text_length) > syntax_non_alnum_threshold:
         logger.debug(f"Syntax Check: High ratio non-alnum/space ({non_alnum_count}/{text_length}).")
         return True
 
@@ -49,9 +49,9 @@ def analyze_syntax(text):
 
     # 3. Check for unusually long words (might indicate encoded data)
     # Avoid splitting if text is very short or already failed checks
-    if text_length > _SYNTAX_MAX_WORD_LENGTH: # Optimization: only split if potentially necessary
+    if text_length > syntax_max_word_length: # Optimization: only split if potentially necessary
         words = text.split()
-        if any(len(word) > _SYNTAX_MAX_WORD_LENGTH for word in words):
+        if any(len(word) > syntax_max_word_length for word in words):
             logger.debug("Syntax Check: Found unusually long word.")
             return True
 

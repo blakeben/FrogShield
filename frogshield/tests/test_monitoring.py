@@ -15,8 +15,12 @@ _MONITOR_LOGGER_TARGET = 'frogshield.realtime_monitor.logger'
 class TestRealtimeMonitor(unittest.TestCase):
 
     def setUp(self):
-        """Set up a monitor instance before each test."""
-        self.monitor = RealtimeMonitor(sensitivity_threshold=0.5) # Moderate sensitivity for tests
+        """Set up a monitor instance with explicit args before each test."""
+        self.monitor = RealtimeMonitor(
+            sensitivity_threshold=0.5, # Moderate sensitivity for most tests
+            initial_avg_length=50,
+            behavior_monitoring_factor=2
+        )
 
     def test_output_analysis_safe(self):
         """Test output analysis for a safe response."""
@@ -59,7 +63,11 @@ class TestRealtimeMonitor(unittest.TestCase):
     def test_behavior_monitoring_anomaly_short(self):
         """Test behavior monitoring detecting an unusually short response."""
         # Use a monitor with higher sensitivity and establish a baseline
-        short_test_monitor = RealtimeMonitor(sensitivity_threshold=0.4) # High sensitivity
+        short_test_monitor = RealtimeMonitor(
+            sensitivity_threshold=0.4, # High sensitivity for this test
+            initial_avg_length=200, # Set a high initial avg length
+            behavior_monitoring_factor=2
+        )
         short_test_monitor.update_baseline("This is a very long sentence to establish a baseline length expectation.")
         short_test_monitor.update_baseline("This is another very long sentence for the baseline calculation.")
 

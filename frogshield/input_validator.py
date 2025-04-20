@@ -7,6 +7,7 @@ Contributors:
 import logging
 import os
 from .utils.text_analysis import analyze_syntax, analyze_context
+from .utils import config_loader
 
 logger = logging.getLogger(__name__)
 
@@ -17,18 +18,18 @@ class InputValidator:
     """
     Validates user input against known prompt injection patterns and techniques.
     """
-    def __init__(self, patterns=None, patterns_file=None, context_window=5):
+    def __init__(self, context_window, patterns=None, patterns_file=None):
         """
         Initializes the InputValidator.
 
         Args:
+            context_window (int): The number of previous messages to consider for context analysis.
             patterns (list, optional): A list of known malicious patterns (regex or simple strings).
                                        If provided, this list is used directly.
             patterns_file (str, optional): Path to a file containing patterns (one per line).
                                           If provided, patterns are loaded from this file.
                                           If both `patterns` and `patterns_file` are None,
                                           attempts to load from default path (`frogshield/patterns.txt`).
-            context_window (int): The number of previous messages to consider for context analysis.
         """
         if patterns is not None:
             self.patterns = patterns
@@ -37,6 +38,9 @@ class InputValidator:
             load_path = patterns_file if patterns_file is not None else _DEFAULT_PATTERNS_FILE
             self.patterns = self._load_patterns_from_file(load_path)
 
+        # Ensure context_window is a positive integer
+        if not isinstance(context_window, int) or context_window < 0:
+            raise ValueError("context_window must be a non-negative integer")
         self.context_window = context_window
         self.conversation_history = [] # Stores (user_input, llm_response) tuples
 
@@ -72,7 +76,8 @@ class InputValidator:
     def _analyze_syntax(self, text):
         """Analyzes the syntax for unusual formatting or hidden instructions."""
         # Placeholder for syntax analysis logic
-        is_unusual = analyze_syntax(text)
+        config = config_loader.get_config() # Fetch config here
+        is_unusual = analyze_syntax(text, config) # Pass config to function
         if is_unusual:
             logger.debug(f"Potential injection detected: Unusual syntax found.")
             return True

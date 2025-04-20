@@ -16,12 +16,14 @@ The goal of FrogShield is to illustrate three key layers of defense against prom
 
 The code is organized into the following structure:
 
+-   `config.yaml`: Default configuration file for FrogShield components.
 -   `frogshield/`: Directory containing the core defense logic modules.
     -   `__init__.py`: Makes `frogshield` importable and defines the public API.
     -   `input_validator.py`: Contains the `InputValidator` class.
     -   `model_hardener.py`: Contains the `ModelHardener` class.
     -   `realtime_monitor.py`: Contains the `RealtimeMonitor` class.
     -   `utils/`: Sub-directory for shared resources.
+        -   `config_loader.py`: Utility for loading `config.yaml`.
         -   `__init__.py`: Package initializer (currently empty).
         -   `text_analysis.py`: Placeholder functions for syntax/context analysis.
     -   `tests/`: Contains basic unit tests using Python's `unittest`.
@@ -38,11 +40,12 @@ The code is organized into the following structure:
 
 ## Configuration
 
--   **Injection Patterns:** The `InputValidator` loads known injection patterns from the `patterns.txt` file located in the project root by default. You can customize the defense by:
+-   **Main Configuration (`config.yaml`):** Most configurable parameters for `InputValidator`, `RealtimeMonitor`, and `TextAnalysis` utilities are defined in `config.yaml` located in the project root. The demo scripts load this file by default.
+-   **Injection Patterns (`patterns.txt`):** Known injection patterns are loaded from `patterns.txt` (in the project root) by default. Customize by:
     -   Editing `patterns.txt` (add/remove patterns, one per line; lines starting with `#` are ignored).
-    -   Passing a specific file path to the `InputValidator` constructor: `InputValidator(patterns_file='path/to/your/patterns.txt')`.
-    -   Passing a list of patterns directly: `InputValidator(patterns=['pattern1', 'pattern2'])`.
--   **Monitoring Sensitivity:** The `RealtimeMonitor` sensitivity threshold for behavioral anomaly detection can be adjusted during initialization (default is 0.8): `RealtimeMonitor(sensitivity_threshold=0.6)`.
+    -   Passing a specific file path to the `InputValidator` constructor: `InputValidator(..., patterns_file='path/to/your/patterns.txt')`.
+    -   Passing a list of patterns directly: `InputValidator(..., patterns=['pattern1', 'pattern2'])`.
+-   **Overriding Config Values:** When initializing components directly (like in the demo scripts or your own code), you pass values loaded from the configuration file. You can override specific values by modifying the loaded dictionary before passing it or by passing arguments directly to the constructors if the class supports it (currently, explicit arguments are required for core settings like `context_window`, `sensitivity_threshold`, etc., overriding any potential defaults). Check the `__init__` methods for required parameters.
 
 ## Logging
 

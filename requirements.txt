@@ -1,2 +1,3 @@
 # Add libraries for specific LLM integrations below
 ollama>=0.1.0 # For running local models via Ollama
+PyYAML>=5.0 # For loading config.yaml

@@ -6,9 +6,17 @@ Contributors:
 """
 
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, ANY
 from frogshield.input_validator import InputValidator
 import random
+
+# Mock config for text_analysis functions used within validator
+MOCK_TEXT_ANALYSIS_CONFIG = {
+    'TextAnalysis': {
+        'syntax_non_alnum_threshold': 0.3,
+        'syntax_max_word_length': 50
+    }
+}
 
 # Define some patterns for testing purposes
 _TEST_PATTERNS_A = [
@@ -23,11 +31,11 @@ class TestInputValidation(unittest.TestCase):
     def setUp(self):
         """Set up the validator for testing."""
         # Initialize with specific patterns for testing
-        self.validator = InputValidator(patterns=_TEST_PATTERNS_A, context_window=3)
+        self.validator = InputValidator(context_window=3, patterns=_TEST_PATTERNS_A)
         # Also create one with default patterns (which now loads from file or is empty)
         # For testing syntax/context which don't rely on specific patterns,
         # we can initialize without patterns or use an empty list.
-        self.no_patterns_validator = InputValidator(patterns=[], context_window=3)
+        self.no_patterns_validator = InputValidator(context_window=3, patterns=[])
 
     def test_pattern_matching_direct(self):
         """Test detection of direct patterns."""
@@ -47,15 +55,15 @@ class TestInputValidation(unittest.TestCase):
         with patch('frogshield.input_validator.analyze_syntax', return_value=False) as mock_syntax, \
              patch('frogshield.input_validator.analyze_context', return_value=False) as mock_context:
             self.assertFalse(self.validator.validate(legitimate_input), "Incorrectly flagged legitimate input during pattern match")
-            mock_syntax.assert_called_once_with(legitimate_input)
+            mock_syntax.assert_called_once_with(legitimate_input, ANY)
             mock_context.assert_called_once_with(legitimate_input, []) # Expect empty history here
 
     # Test the validator's handling of the analyze_syntax result
     @patch('frogshield.input_validator.analyze_context', return_value=False) # Assume context is fine
     @patch('frogshield.input_validator.analyze_syntax')
     def test_syntax_analysis_integration(self, mock_analyze_syntax, mock_analyze_context):
-        """Test the placeholder syntax analysis function.
-           Note: Relies on the current placeholder logic in text_analysis.
+        """Test the validator's handling of the analyze_syntax result
+           (mocks the underlying analysis function).
         """
         # Test when syntax analysis returns True
         mock_analyze_syntax.return_value = True
@@ -63,7 +71,7 @@ class TestInputValidation(unittest.TestCase):
         # Use validator with no patterns to isolate syntax check
         self.assertTrue(self.no_patterns_validator.validate(suspicious_input),
                         "Validator failed to return True when analyze_syntax returned True")
-        mock_analyze_syntax.assert_called_once_with(suspicious_input)
+        mock_analyze_syntax.assert_called_once_with(suspicious_input, ANY)
         # Note: mock_analyze_context is NOT called due to short-circuit evaluation
 
         # Reset mocks for the next assertion
@@ -75,15 +83,16 @@ class TestInputValidation(unittest.TestCase):
         legitimate_input = "This is a normal sentence."
         self.assertFalse(self.no_patterns_validator.validate(legitimate_input),
                          "Validator failed to return False when all checks return False")
-        mock_analyze_syntax.assert_called_once_with(legitimate_input)
+        mock_analyze_syntax.assert_called_once_with(legitimate_input, ANY)
         mock_analyze_context.assert_called_once_with(legitimate_input, []) # Expect context check when pattern/syntax are False
 
     # Test the validator's handling of the analyze_context result
     @patch('frogshield.input_validator.analyze_syntax', return_value=False) # Assume syntax is fine
     @patch('frogshield.input_validator.analyze_context')
+    # Note: analyze_context doesn't use config currently, so no patch needed here.
     def test_context_filtering_integration(self, mock_analyze_context, mock_analyze_syntax):
-        """Test the placeholder context filtering function.
-           Note: Relies on the current placeholder logic in text_analysis.
+        """Test the validator's handling of the analyze_context result
+           (mocks the underlying analysis function).
         """
         history = [
             ("What is your name?", "I am a helpful assistant."),
@@ -99,7 +108,7 @@ class TestInputValidation(unittest.TestCase):
         # Pass history explicitly to test context check independent of patterns
         self.assertTrue(self.no_patterns_validator.validate(context_attack, conversation_history=history),
                         "Validator failed to return True when analyze_context returned True")
-        mock_analyze_syntax.assert_called_once_with(context_attack)
+        mock_analyze_syntax.assert_called_once_with(context_attack, ANY)
         mock_analyze_context.assert_called_once_with(context_attack, history) # Expect history to be passed
 
         # Reset mocks for the next assertion
@@ -110,12 +119,12 @@ class TestInputValidation(unittest.TestCase):
         mock_analyze_context.return_value = False
         self.assertFalse(self.no_patterns_validator.validate(legitimate_follow_up, conversation_history=history),
                          "Validator failed to return False when all checks return False")
-        mock_analyze_syntax.assert_called_once_with(legitimate_follow_up)
+        mock_analyze_syntax.assert_called_once_with(legitimate_follow_up, ANY)
         mock_analyze_context.assert_called_once_with(legitimate_follow_up, history)
 
     def test_validation_with_external_history(self):
         """Test passing conversation history directly to validate method."""
-        internal_validator = InputValidator(patterns=_TEST_PATTERNS_B, context_window=2)
+        internal_validator = InputValidator(context_window=2, patterns=_TEST_PATTERNS_B)
         initial_internal_history_len = len(internal_validator.conversation_history)
 
         external_history = [

@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "frogshield"
+version = "0.1.0"
+description = "LLM Prompt Injection Defense Framework (Educational Demo)"
+readme = "README.md"
+requires-python = ">=3.13"
+license = {text = "MIT License"}
+authors = [
+  {name = "Ben Blake", email = "ben.blake@tcu.edu"},
+  {name = "Tanner Hendrix", email = "t.hendrix@tcu.edu"},
+]
+# Add dependencies required by the library itself (not just demos)
+dependencies = [
+    "PyYAML>=5.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."] # Look for packages in the current directory
+include = ["frogshield*"] # Include frogshield and its subpackages
+exclude = ["frogshield.tests*"] # Exclude tests from the built package 
