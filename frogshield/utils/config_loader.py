@@ -27,20 +27,17 @@ def load_config(config_path='config.yaml'):
     global _CONFIG
     config = deepcopy(_DEFAULT_CONFIG) # Start with defaults
 
-    # Use absolute path for config relative to project root if relative path given
-    if not os.path.isabs(config_path):
-        # Assuming this script is run from project root or similar
-        # A more robust approach might involve finding project root dynamically
-        base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..\..')) # Go up two levels from utils
-        config_path = os.path.join(base_path, config_path)
+    # If a relative path is given for config_path, resolve it relative to the current working directory
+    # This is more standard than resolving relative to the library source file
+    absolute_config_path = os.path.abspath(config_path)
 
-    if not os.path.exists(config_path):
-        logger.warning(f"Configuration file not found at {config_path}. Using default settings.")
+    if not os.path.exists(absolute_config_path):
+        logger.warning(f"Configuration file not found at {absolute_config_path}. Using default settings.")
         _CONFIG = config
         return _CONFIG
 
     try:
-        with open(config_path, 'r') as f:
+        with open(absolute_config_path, 'r') as f:
             file_config = yaml.safe_load(f)
         if file_config:
             # Merge file config into defaults (simple merge, nested dicts not deeply merged here)
@@ -49,14 +46,14 @@ def load_config(config_path='config.yaml'):
                     config[section].update(settings)
                 else:
                     config[section] = settings # Add new sections if any
-            logger.info(f"Loaded configuration from {config_path}")
+            logger.info(f"Loaded configuration from {absolute_config_path}")
         else:
-            logger.warning(f"Configuration file {config_path} is empty. Using default settings.")
+            logger.warning(f"Configuration file {absolute_config_path} is empty. Using default settings.")
 
     except yaml.YAMLError as e:
-        logger.error(f"Error parsing configuration file {config_path}: {e}. Using default settings.", exc_info=True)
+        logger.error(f"Error parsing configuration file {absolute_config_path}: {e}. Using default settings.", exc_info=True)
     except Exception as e:
-        logger.error(f"Unexpected error loading configuration file {config_path}: {e}. Using default settings.", exc_info=True)
+        logger.error(f"Unexpected error loading configuration file {absolute_config_path}: {e}. Using default settings.", exc_info=True)
 
     _CONFIG = config
     return _CONFIG
