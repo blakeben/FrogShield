@@ -31,10 +31,11 @@ The code is organized into the following structure:
         -   `test_validation.py`
         -   `test_monitoring.py`
         -   `test_hardening.py`
+-   `pyproject.toml`: Project build and metadata configuration.
 -   `patterns.txt`: External file containing known injection patterns (one per line).
 -   `demo_mock.py`: Script demonstrating FrogShield with a mock LLM.
 -   `demo_ollama.py`: Script demonstrating FrogShield with a local Ollama LLM.
--   `requirements.txt`: Lists necessary Python libraries (currently just `ollama` for the local demo).
+-   `requirements.txt`: Lists dependencies needed for development or specific demos (e.g., `ollama`). Core library dependencies are listed in `pyproject.toml`.
 -   `.gitignore`: Standard Python gitignore file.
 -   `README.md`: This file.
 
@@ -67,9 +68,13 @@ The code is organized into the following structure:
         python3 -m venv venv
         source venv/bin/activate
         ```
-    *   Install required dependencies:
+    *   Install dependencies for demos/development:
         ```bash
         pip install -r requirements.txt
+        ```
+    *   Install the `frogshield` package in editable mode (also installs core dependencies like `PyYAML` listed in `pyproject.toml`):
+        ```bash
+        pip install -e .
         ```
 3.  **Run Demos:**
     *   To run the basic demo with a mock LLM:
@@ -88,7 +93,7 @@ The code is organized into the following structure:
 
 ## Current Status & Limitations
 
--   This is **not** an installable package, just a collection of scripts and modules.
+-   The project includes basic packaging configuration (`pyproject.toml`) and can be installed locally (`pip install -e .`).
 -   The core logic (pattern matching, syntax/context analysis, behavioral monitoring) uses simplified placeholders suitable for demonstration.
 -   The `model_hardener.py` module demonstrates boundary testing but requires integration with an actual model training pipeline for other hardening techniques.
 -   The framework has been tested via the included demo scripts and unit tests, which currently pass.
