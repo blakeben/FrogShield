@@ -64,11 +64,12 @@ class InputValidator:
         return patterns
 
     def _match_patterns(self, text):
-        """Checks if the text matches any known malicious patterns."""
+        """Checks if the text matches any known malicious patterns (case-insensitive)."""
+        text_lower = text.lower()
         for pattern in self.patterns:
-            # Basic string matching for demonstration
+            # Basic string matching for demonstration (now case-insensitive)
             # In a real implementation, use regex or more sophisticated matching
-            if pattern in text:
+            if pattern.lower() in text_lower:
                 logger.debug(f"Potential injection detected: Matched pattern '{pattern}'")
                 return True
         return False
