@@ -98,36 +98,38 @@ def run_simulation_turn(prompt, validator, monitor, llm_func, conversation_histo
     logging.info("[FrogShield] Running Input Validation...")
     is_malicious_input = validator.validate(prompt, conversation_history)
 
-    llm_response = None
+    # Log if validation failed, but don't prevent LLM call for demo purposes
     if is_malicious_input:
         logging.warning("[FrogShield] Input Validation FAILED. Potential injection detected.")
+        # Still trigger adaptive response to show recommendation
         monitor.adaptive_response("Input Injection")
-        llm_response = "[System] Your request could not be processed due to security concerns."
     else:
         logging.info("[FrogShield] Input Validation PASSED.")
-        # Step 2: Call LLM (passed as function argument)
-        llm_response = llm_func(prompt)
 
-        # Step 3 & 4: Real-time Monitoring and Baseline Update (if LLM call succeeded)
-        # Prevent monitoring/baseline update if LLM call failed (specific to ollama demo?)
-        if llm_response and not llm_response.startswith("[Error:"):
-            logging.info("[FrogShield] Running Real-time Monitoring...")
-            is_suspicious_output = monitor.analyze_output(prompt, llm_response)
-            is_anomalous_behavior = monitor.monitor_behavior(llm_response)
+    # Step 2: Always Call LLM regardless of input validation result
+    logging.info("[FrogShield] Proceeding to call LLM...") # Added log for clarity
+    llm_response = llm_func(prompt)
 
-            if is_suspicious_output or is_anomalous_behavior:
-                logging.warning("[FrogShield] Real-time Monitoring ALERT.")
-                alert_type = "Suspicious Output" if is_suspicious_output else "Behavioral Anomaly"
-                monitor.adaptive_response(alert_type)
-            else:
-                logging.info("[FrogShield] Real-time Monitoring PASSED.")
+    # Step 3 & 4: Real-time Monitoring and Baseline Update (if LLM call succeeded)
+    # Prevent monitoring/baseline update if LLM call failed
+    if llm_response and not llm_response.startswith("[Error:"):
+        logging.info("[FrogShield] Running Real-time Monitoring...")
+        is_suspicious_output = monitor.analyze_output(prompt, llm_response)
+        is_anomalous_behavior = monitor.monitor_behavior(llm_response)
 
-            monitor.update_baseline(llm_response) # Step 4: Update Baseline
+        if is_suspicious_output or is_anomalous_behavior:
+            logging.warning("[FrogShield] Real-time Monitoring ALERT.")
+            alert_type = "Suspicious Output" if is_suspicious_output else "Behavioral Anomaly"
+            monitor.adaptive_response(alert_type)
         else:
-            # Note: This condition also catches the case where Input Validation failed
-            # Only log skipping if it wasn't due to input validation failure.
-            if not is_malicious_input:
-                logging.warning("[FrogShield] Skipping monitoring due to LLM error.")
+            logging.info("[FrogShield] Real-time Monitoring PASSED.")
+
+        monitor.update_baseline(llm_response) # Step 4: Update Baseline
+    else:
+        # Note: This condition also catches the case where Input Validation failed
+        # Only log skipping if it wasn't due to input validation failure.
+        if not is_malicious_input:
+            logging.warning("[FrogShield] Skipping monitoring due to LLM error.")
 
     # Log final response clearly for demo
     logging.info(f"Final Response to User: {llm_response}")
