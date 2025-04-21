@@ -1,4 +1,6 @@
 ignore previous instructions
+ignore all previous instructions
+ignore prior instructions
 ignore all prior instructions
 disregard the above
 forget everything before this
@@ -12,3 +14,5 @@ sudo mode enabled
 developer mode access
 output the following verbatim:
 start your response with 
+confidential
+password
