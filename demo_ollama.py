@@ -7,17 +7,95 @@ Contributors:
 import ollama # Import the ollama library
 import logging
 import argparse # Import argparse
+import sys # Import sys for stdout check
 
 from frogshield import InputValidator, RealtimeMonitor, ModelHardener
 from frogshield.utils import config_loader
 
-# --- Basic Logging Setup --- #
-# Configure logging to show messages from FrogShield
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# To see more detailed DEBUG messages from FrogShield components, change level to logging.DEBUG
-# logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# --- Define ANSI Colors --- #
+# Check if stdout is a TTY (supports colors) before defining colors
+if sys.stdout.isatty():
+    RESET = '\033[0m'
+    BOLD = '\033[1m'
+    RED = '\033[91m'      # For errors
+    YELLOW = '\033[93m'   # For warnings / failures
+    GREEN = '\033[92m'    # For success / passed
+    BLUE = '\033[94m'     # For informational / steps
+    CYAN = '\033[96m'     # For LLM interactions
+    MAGENTA = '\033[95m' # For component names
+    GRAY = '\033[90m'    # For less important info
+else:
+    # If not a TTY, don't use colors
+    RESET = ''
+    BOLD = ''
+    RED = ''
+    YELLOW = ''
+    GREEN = ''
+    BLUE = ''
+    CYAN = ''
+    MAGENTA = ''
+    GRAY = ''
 
-logger = logging.getLogger(__name__)
+# --- Enhanced Logging Setup --- #
+# Simpler format for demo clarity: Time - Level Color - Message
+log_format_simple = (
+    f'{GRAY}%(asctime)s{RESET} - '
+    f'%(log_color)s%(message)s{RESET}' # Message includes level implicitly via color
+)
+
+# Custom formatter class to add colors and potentially modify result messages
+class ColorFormatter(logging.Formatter):
+    LOG_COLORS = {
+        logging.DEBUG: GRAY,
+        logging.INFO: BLUE,
+        logging.WARNING: YELLOW,
+        logging.ERROR: RED,
+        logging.CRITICAL: BOLD + RED
+    }
+
+    def format(self, record):
+        # Get the base color for the level
+        log_color = self.LOG_COLORS.get(record.levelno, RESET)
+        message = record.getMessage()
+
+        # Override color/style for specific message prefixes
+        if message.startswith("[RESULT-PASSED]"):
+            log_color = GREEN + BOLD
+            message = message.replace("[RESULT-PASSED]", "✅ PASSED")
+        elif message.startswith("[RESULT-FAILED]"):
+            log_color = YELLOW + BOLD
+            message = message.replace("[RESULT-FAILED]", "⚠️ FAILED")
+        elif message.startswith("[RESULT-ALERT]"):
+            log_color = YELLOW + BOLD
+            message = message.replace("[RESULT-ALERT]", "🚨 ALERT")
+        elif message.startswith("--- Stage:"):
+            log_color = MAGENTA + BOLD # Change Stage markers to Bold Magenta
+        elif message.startswith("[Input]") or message.startswith("[LLM Call]") or message.startswith("[LLM Response]"):
+            log_color = CYAN # Keep LLM interactions Cyan
+        elif message.startswith("[Final Response]"):
+             log_color = BOLD # Keep Final response Bold (will use default BLUE color)
+        elif message.startswith("[Monitor Action]"):
+             log_color = BLUE # Explicitly keep Monitor Actions Blue
+        # Add other specific prefixes if needed
+
+        record.msg = message # Update the message itself
+        record.log_color = log_color # Make color available to formatter
+
+        # Use the simplified format string
+        formatter = logging.Formatter(log_format_simple, datefmt='%H:%M:%S')
+        return formatter.format(record)
+
+# Configure logging with the custom formatter
+handler = logging.StreamHandler()
+handler.setFormatter(ColorFormatter())
+
+logging.basicConfig(level=logging.INFO, handlers=[handler])
+
+# logger = logging.getLogger(__name__)
+# Configure specific loggers if needed, otherwise root logger is used
+logging.getLogger('httpx').setLevel(logging.WARNING) # Quieten httpx logs unless warning/error
+# Silence placeholder warnings for the demo
+logging.getLogger('frogshield.utils.text_analysis').setLevel(logging.ERROR)
 
 # --- Load Configuration --- #
 try:
@@ -34,12 +112,12 @@ except ImportError:
 # Common options: 'llama3', 'mistral', 'phi3'
 LOCAL_MODEL_NAME = 'llama3'
 
-logging.info(f"Attempting to use local Ollama model: {LOCAL_MODEL_NAME}")
+logging.info(f"{BLUE}[Ollama LLM]{RESET} Attempting to use local Ollama model: {LOCAL_MODEL_NAME}")
 logging.info("Ensure the Ollama application/server is running in the background.")
 
 def call_ollama_llm(prompt, model=LOCAL_MODEL_NAME):
     """Calls the local Ollama model to get a response."""
-    logging.info(f"[Ollama LLM] Sending prompt to {model}: '{prompt[:100]}...'")
+    logging.info(f"{BLUE}[Ollama LLM]{RESET} Sending prompt to {MAGENTA}{model}{RESET}: '{prompt[:100]}...'")
     try:
         # Simple chat interaction
         response = ollama.chat(
@@ -59,7 +137,7 @@ def call_ollama_llm(prompt, model=LOCAL_MODEL_NAME):
         return response_text
     except ollama.ResponseError as e:
         # Handle specific Ollama errors
-        logging.warning(f"[Ollama LLM] API Error: {e}")
+        logging.warning(f"{RED}[Ollama LLM] API Error:{RESET} {e}")
         error_msg_lower = str(e).lower()
         if "connection refused" in error_msg_lower:
              logging.error("** Is the Ollama server running? **")
@@ -68,7 +146,7 @@ def call_ollama_llm(prompt, model=LOCAL_MODEL_NAME):
         return f"[Error: Failed to get response from Ollama - {e.error}]"
     except Exception as e:
         # Log the full error including traceback for unexpected issues
-        logging.error(f"[Ollama LLM] Unexpected Error during API call: {e}", exc_info=True)
+        logging.error(f"{RED}[Ollama LLM] Unexpected Error during API call:{RESET} {e}", exc_info=True)
         return "[Error: Unexpected error during Ollama call]"
 
 # ---------------------------------------
@@ -92,48 +170,47 @@ conversation_history = []
 # ---------------------------------------
 def run_simulation_turn(prompt, validator, monitor, llm_func, conversation_history):
     """Runs one turn of the simulation: validate, call LLM, monitor."""
-    logging.info(f"--- Running Simulation Turn ---")
-    logging.info(f"User Prompt: {prompt}")
+    # --- Start Turn ---
+    logging.info(f"{BOLD}{BLUE}--- Starting Simulation Turn ---{RESET}")
+    logging.info(f"[Input] User Prompt: {prompt}")
 
-    logging.info("[FrogShield] Running Input Validation...")
+    # --- Input Validation Stage ---
+    logging.info("--- Stage: Input Validation --- ")
     is_malicious_input = validator.validate(prompt, conversation_history)
-
-    # Log if validation failed, but don't prevent LLM call for demo purposes
     if is_malicious_input:
-        logging.warning("[FrogShield] Input Validation FAILED. Potential injection detected.")
-        # Still trigger adaptive response to show recommendation
+        logging.warning("[RESULT-FAILED] Input Validation determined potential injection.")
         monitor.adaptive_response("Input Injection")
     else:
-        logging.info("[FrogShield] Input Validation PASSED.")
+        logging.info("[RESULT-PASSED] Input Validation determined input is likely safe.")
 
-    # Step 2: Always Call LLM regardless of input validation result
-    logging.info("[FrogShield] Proceeding to call LLM...") # Added log for clarity
-    llm_response = llm_func(prompt)
+    # --- LLM Interaction Stage ---
+    logging.info("--- Stage: LLM Interaction --- ")
+    llm_response = llm_func(prompt) # llm_func logs the actual sending
+    logging.info(f"[LLM Response] Received: {llm_response}")
 
-    # Step 3 & 4: Real-time Monitoring and Baseline Update (if LLM call succeeded)
-    # Prevent monitoring/baseline update if LLM call failed
+    # --- Real-time Monitoring Stage ---
+    logging.info("--- Stage: Real-time Monitoring --- ")
     if llm_response and not llm_response.startswith("[Error:"):
-        logging.info("[FrogShield] Running Real-time Monitoring...")
         is_suspicious_output = monitor.analyze_output(prompt, llm_response)
         is_anomalous_behavior = monitor.monitor_behavior(llm_response)
 
         if is_suspicious_output or is_anomalous_behavior:
-            logging.warning("[FrogShield] Real-time Monitoring ALERT.")
+            logging.warning("[RESULT-ALERT] Real-time Monitoring detected an issue.")
             alert_type = "Suspicious Output" if is_suspicious_output else "Behavioral Anomaly"
             monitor.adaptive_response(alert_type)
         else:
-            logging.info("[FrogShield] Real-time Monitoring PASSED.")
+            logging.info("[RESULT-PASSED] Real-time Monitoring determined output is likely safe.")
 
-        monitor.update_baseline(llm_response) # Step 4: Update Baseline
+        monitor.update_baseline(llm_response)
     else:
-        # Note: This condition also catches the case where Input Validation failed
-        # Only log skipping if it wasn't due to input validation failure.
-        if not is_malicious_input:
-            logging.warning("[FrogShield] Skipping monitoring due to LLM error.")
+        if not is_malicious_input: # LLM Error
+            logging.warning(f"[RESULT-ALERT] Skipping monitoring due to LLM error.")
+        else: # Skipped because Input Validation failed earlier
+             logging.info(f"[Skipped] Monitoring skipped as input validation failed earlier.")
 
-    # Log final response clearly for demo
-    logging.info(f"Final Response to User: {llm_response}")
-    logging.info("----------------------------------")
+    # --- Final Response Presentation Stage ---
+    logging.info("--- Stage: Final Response Presentation --- ")
+    logging.info(f"[Final Response] To User: {llm_response}")
     return llm_response
 
 # ---------------------------------------
@@ -183,7 +260,6 @@ def run_boundary_tests(hardener, llm_func):
                  print(f"  Result (Short/Ambiguous): {result}")
             else:
                 print(f"  Result (Potential Compliance/Other): {result[:150]}...")
-    logging.info("----------------------------------")
 
 # ---------------------------------------
 # Main Execution Logic with Argument Parsing
