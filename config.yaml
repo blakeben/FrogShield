@@ -5,9 +5,10 @@ InputValidator:
 
 RealtimeMonitor:
   sensitivity_threshold: 0.8
-  initial_avg_length: 50      # Default avg length for behavior monitoring baseline
-  behavior_monitoring_factor: 2 # Factor applied to sensitivity for length deviation check
+  initial_avg_length: 50
+  behavior_monitoring_factor: 2
 
 TextAnalysis:
   syntax_non_alnum_threshold: 0.3
-  syntax_max_word_length: 50 
+  syntax_max_word_length: 50
+  

@@ -48,6 +48,49 @@ The code is organized into the following structure:
     -   Passing a list of patterns directly: `InputValidator(..., patterns=['pattern1', 'pattern2'])`.
 -   **Overriding Config Values:** When initializing components directly (like in the demo scripts or your own code), you pass values loaded from the configuration file. You can override specific values by modifying the loaded dictionary before passing it or by passing arguments directly to the constructors if the class supports it (currently, explicit arguments are required for core settings like `context_window`, `sensitivity_threshold`, etc., overriding any potential defaults). Check the `__init__` methods for required parameters.
 
+## Configuration (`config.yaml`)
+
+FrogShield's behavior can be tuned via the `config.yaml` file. Here's an explanation of each parameter:
+
+### `InputValidator`
+
+These settings control the `frogshield.InputValidator` class.
+
+*   `context_window` (`int`):
+    *   **Purpose:** Specifies how many previous turns (user prompt + LLM response pairs) the validator should consider when analyzing the context of a new prompt.
+    *   **How it works:** Used by the `_filter_context` method (which relies on `utils.text_analysis.analyze_context`) to detect potential context manipulation attempts (e.g., prompts trying to override previous instructions).
+    *   **Effect:** A larger value provides more historical context but may increase processing time slightly.
+
+### `RealtimeMonitor`
+
+These settings control the `frogshield.RealtimeMonitor` class.
+
+*   `sensitivity_threshold` (`float`):
+    *   **Purpose:** Sets the base sensitivity for detecting behavioral anomalies in LLM responses, specifically focusing on response length deviations.
+    *   **How it works:** Used within the `monitor_behavior` method. A value between 0.0 (least sensitive) and 1.0 (most sensitive).
+    *   **Effect:** Combined with `behavior_monitoring_factor`, this defines the acceptable deviation range from the baseline average response length. Higher values make the monitor more likely to flag responses as anomalous for smaller length changes.
+*   `initial_avg_length` (`int`):
+    *   **Purpose:** Provides a starting guess for the average length of a "normal" LLM response.
+    *   **How it works:** Used to initialize the `baseline_behavior` dictionary. This value is gradually replaced by the actual running average as more responses are processed by `update_baseline`.
+    *   **Effect:** Influences anomaly detection sensitivity primarily during the initial interactions before a stable baseline is established.
+*   `behavior_monitoring_factor` (`float`):
+    *   **Purpose:** Acts as a multiplier for the `sensitivity_threshold` to calculate the upper and lower bounds for acceptable response length deviation.
+    *   **How it works:** In `monitor_behavior`, the acceptable range is calculated roughly as `avg_length * (1 +/- sensitivity_threshold * behavior_monitoring_factor)`.
+    *   **Effect:** A larger factor widens the acceptable range, making the length anomaly detection *less* sensitive (requiring larger deviations to trigger an alert). A factor of 2 means the length must deviate by more than `sensitivity * 2` times the average to be flagged.
+
+### `TextAnalysis`
+
+These settings control helper functions in `frogshield.utils.text_analysis`, primarily used by `InputValidator`'s `_analyze_syntax` method.
+
+*   `syntax_non_alnum_threshold` (`float`):
+    *   **Purpose:** Defines the threshold for the ratio of non-alphanumeric characters (symbols, punctuation, whitespace) allowed in a prompt.
+    *   **How it works:** The `analyze_syntax` function calculates this ratio. If it exceeds the threshold, the input is flagged as potentially unusual.
+    *   **Effect:** Lowering this value makes the validator more likely to flag inputs with higher symbol density, which can sometimes indicate obfuscation attempts.
+*   `syntax_max_word_length` (`int`):
+    *   **Purpose:** Sets the maximum allowed length for any single "word" (contiguous sequence of non-whitespace characters) in the input prompt.
+    *   **How it works:** `analyze_syntax` checks the length of each word.
+    *   **Effect:** Helps catch potential obfuscation techniques that use extremely long character sequences without spaces. Prompts containing words longer than this limit will be flagged.
+
 ## Logging
 
 -   The `frogshield` library modules use Python's standard `logging` module for internal messages instead of printing directly.
