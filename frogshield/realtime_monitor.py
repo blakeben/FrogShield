@@ -53,18 +53,20 @@ class RealtimeMonitor:
              logger.info("Output analysis: Model refused potentially harmful request.")
              return False # Not suspicious in itself, depends on context
 
-        # Check if the response contains keywords often associated with leaks,
-        # especially if the prompt itself looked like an attack.
-        is_likely_attack_prompt = "ignore previous instructions" in prompt.lower() # Basic check
+        # Check if the response contains keywords often associated with leaks.
+        # Removed dependency on checking the prompt itself.
+        # is_likely_attack_prompt = "ignore previous instructions" in prompt.lower() # Basic check (REMOVED)
         found_suspicious_keyword = None
         for keyword in compliance_keywords:
             if keyword in response.lower():
                 found_suspicious_keyword = keyword
                 break # Stop checking once one is found
 
-        if found_suspicious_keyword and is_likely_attack_prompt:
-             logger.warning(f"Suspicious output detected: Potential leak of '{found_suspicious_keyword}' after likely injection.")
-             self.log_alert(prompt, response, f"Suspicious Keyword Leak ({found_suspicious_keyword})")
+        # if found_suspicious_keyword and is_likely_attack_prompt: (MODIFIED)
+        if found_suspicious_keyword:
+             logger.warning(f"Suspicious output detected: Found keyword '{found_suspicious_keyword}' in response.")
+             # Log the alert regardless of the original prompt's appearance
+             self.log_alert(prompt, response, f"Suspicious Keyword ({found_suspicious_keyword})")
              return True
 
         logger.debug("Output analysis: No immediate suspicious content found.")
