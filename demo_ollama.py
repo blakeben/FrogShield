@@ -211,49 +211,19 @@ if __name__ == "__main__":
         _ = run_simulation_turn(
             args.prompt, validator, monitor, call_ollama_llm, conversation_history
         )
-        # Optionally display logged alerts after the single turn
+        # Display logged alerts *only* after a single prompt turn
         logged_alerts = monitor.get_alerts()
         if logged_alerts:
             logging.warning("--- Security Alerts Logged for this Turn ---")
             for alert in logged_alerts:
                 print(f"  - Alert Details: {alert}")
+        else:
+            # Only log "no alerts" if we actually ran a turn that could have produced them
+            logging.info("No security alerts were logged during this turn.")
 
     elif args.test_boundaries:
         # Run the boundary testing suite
         run_boundary_tests(hardener, call_ollama_llm)
         # Boundary tests don't typically log alerts via the monitor in this setup,
         # as the assessment is based on the LLM's direct response quality.
-
-# --- Removed the original sequential simulation loop and boundary test execution ---
-# --- The code below this point in the original file is now handled by the argument parser logic ---
-
-# --- Example of removed section: ---
-# sample_prompts = [ ... ]
-# logging.info("--- Starting Prompt Simulation with Local LLM ---")
-# for i, prompt in enumerate(sample_prompts):
-#    ... run_simulation_turn ...
-# logging.info("--- Primary Simulation Complete ---")
-# logging.info("--- Starting Model Hardener Demonstration (Boundary Testing) --- ")
-# boundary_test_cases = [ ... ]
-# boundary_results = hardener.test_boundaries(...)
-# logging.info("--- Boundary Testing Results Summary --- ")
-# for prompt, result in boundary_results.items():
-#   ... print results ...
-# logging.info("----------------------------------")
-# logged_alerts = monitor.get_alerts()
-# if logged_alerts: ...
-# else: ...
-
-# ---------------------------------------
-# 5. Final Security Alert Summary (From Monitor)
-# ---------------------------------------
-
-# Display logged alerts, if any
-logged_alerts = monitor.get_alerts()
-if logged_alerts:
-    logging.warning("--- Security Alerts Logged ---")
-    for alert in logged_alerts:
-        # Print summary for clarity in demo
-        print(f"  - Alert Details: {alert}")
-else:
-    logging.info("No security alerts were logged during the simulation.") 
+        
