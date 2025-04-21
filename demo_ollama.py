@@ -211,15 +211,12 @@ if __name__ == "__main__":
         _ = run_simulation_turn(
             args.prompt, validator, monitor, call_ollama_llm, conversation_history
         )
-        # Display logged alerts *only* after a single prompt turn
+        # Display logged alerts *only* after a single prompt turn, and only if they exist
         logged_alerts = monitor.get_alerts()
         if logged_alerts:
             logging.warning("--- Security Alerts Logged for this Turn ---")
             for alert in logged_alerts:
                 print(f"  - Alert Details: {alert}")
-        else:
-            # Only log "no alerts" if we actually ran a turn that could have produced them
-            logging.info("No security alerts were logged during this turn.")
 
     elif args.test_boundaries:
         # Run the boundary testing suite
