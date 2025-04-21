@@ -64,8 +64,9 @@ class RealtimeMonitor:
 
         # if found_suspicious_keyword and is_likely_attack_prompt: (MODIFIED)
         if found_suspicious_keyword:
-             logger.warning(f"Suspicious output detected: Found keyword '{found_suspicious_keyword}' in response.")
-             # Log the alert regardless of the original prompt's appearance
+             # Log detection detail as INFO (Blue)
+             logger.info(f"Suspicious output detected: Found keyword '{found_suspicious_keyword}' in response.")
+             # Log the alert (which uses logger.warning internally - Yellow)
              self.log_alert(prompt, response, f"Suspicious Keyword ({found_suspicious_keyword})")
              return True
 
@@ -96,8 +97,9 @@ class RealtimeMonitor:
         lower_bound = avg_length * (1 - self.sensitivity * self._behavior_monitoring_factor)
 
         if current_length > upper_bound or current_length < lower_bound:
+            # Log detection detail as INFO (Blue)
             logger.info(f"Behavior anomaly detected: Length ({current_length}) deviates from avg ({avg_length:.0f}).")
-            # self.log_alert("N/A", response, "Behavioral Anomaly (Length)") # Logging might be too noisy here
+            # self.log_alert("N/A", response, "Behavioral Anomaly (Length)") # Keep this commented
             return True
 
         logger.debug("Behavior monitoring: No significant deviations detected.")
@@ -125,15 +127,16 @@ class RealtimeMonitor:
         Args:
             detection_type (str): The type of threat detected (e.g., 'Input Injection', 'Suspicious Output').
         """
-        logger.info(f"Adaptive response triggered for: {detection_type}")
+        # Use a distinct prefix for these logs
+        logger.info(f"[Monitor Action] Adaptive response triggered for: {detection_type}")
         if detection_type == "Input Injection":
-            logger.info("  Recommendation: Block the request, log the attempt, notify admin.")
+            logger.info("[Monitor Action] Recommendation: Block the request, log the attempt, notify admin.")
             # In a real system: raise SecurityException("Input injection detected")
         elif detection_type == "Suspicious Output" or detection_type == "Behavioral Anomaly":
-            logger.info("  Recommendation: Flag the response, request human review, potentially limit user.")
+            logger.info("[Monitor Action] Recommendation: Flag the response, request human review, potentially limit user.")
             # In a real system: return "[System Alert: Response flagged for review]"
         else:
-            logger.info("  Recommendation: Log the event for analysis.")
+            logger.info("[Monitor Action] Recommendation: Log the event for analysis.")
 
     def log_alert(self, prompt, response, reason):
         """Logs a detected security alert."""
