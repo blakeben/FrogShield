@@ -8,7 +8,6 @@ Contributors:
 import unittest
 from unittest.mock import patch, ANY
 from frogshield.input_validator import InputValidator
-import random
 
 # Mock config for text_analysis functions used within validator
 MOCK_TEXT_ANALYSIS_CONFIG = {
