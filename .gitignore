@@ -142,3 +142,5 @@ cython_debug/
 # Optional: Add if API keys are accidentally stored in config files
 # config.py
 # secrets.yaml
+
+run_demo.sh
