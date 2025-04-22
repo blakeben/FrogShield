@@ -18,4 +18,12 @@ TextAnalysis:
   syntax_non_alnum_threshold: 0.3
   # Placeholder threshold: Max allowed length for a single word.
   syntax_max_word_length: 50
+
+# Paths to external list files (relative to project root/CWD)
+ListFiles:
+  patterns: "config_data/patterns.txt"
+  refusal_keywords: "config_data/refusal_keywords.txt"
+  compliance_keywords: "config_data/compliance_keywords.txt"
+  sample_prompts: "config_data/sample_prompts.txt"
+  boundary_refusal_keywords: "config_data/boundary_refusal_keywords.txt"
   
