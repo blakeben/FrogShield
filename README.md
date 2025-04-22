@@ -127,7 +127,7 @@ These settings control the placeholder helper functions in `frogshield.utils.tex
 
 1.  **Clone the Repository:**
     ```bash
-    git clone <repository_url>  # Replace with actual URL
+    git clone https://github.com/blakeben/FrogShield.git
     cd FrogShield
     ```
 
