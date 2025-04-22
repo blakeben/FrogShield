@@ -10,13 +10,10 @@ Contributor: Tanner Hendrix <t.hendrix@tcu.edu>
 """
 import datetime
 import logging
+import os
+from .utils import config_loader as cfg_loader
 
 logger = logging.getLogger(__name__)
-
-# Constants for keyword checks (case-insensitive)
-REFUSAL_KEYWORDS = {"cannot comply", "unable to", "not allowed"}
-COMPLIANCE_KEYWORDS = {"secret", "confidential", "internal data", "password"}
-
 
 class RealtimeMonitor:
     """Monitors LLM outputs and behavior for signs of successful prompt injections or anomalies.
@@ -29,8 +26,11 @@ class RealtimeMonitor:
         baseline_behavior (dict): Stores statistics for baseline behavior, primarily
                                   'avg_length', 'count', and 'total_length'.
         alert_log (list): A log of detected alerts, each stored as a dictionary.
+        refusal_keywords (set): Lowercase set of keywords indicating refusal.
+        compliance_keywords (set): Lowercase set of keywords indicating potential compliance/leak.
     """
-    def __init__(self, sensitivity_threshold, initial_avg_length, behavior_monitoring_factor):
+    def __init__(self, sensitivity_threshold, initial_avg_length, behavior_monitoring_factor,
+                 refusal_keywords=None, compliance_keywords=None):
         """Initializes the RealtimeMonitor.
 
         Args:
@@ -40,11 +40,20 @@ class RealtimeMonitor:
                 behavior calculation.
             behavior_monitoring_factor (float): Factor modulating the sensitivity's
                 effect on deviation bounds.
+            refusal_keywords (set, optional): A set of lowercase refusal keyword strings.
+                If None, loaded from the path in `config.ListFiles.refusal_keywords`.
+                Defaults to None.
+            compliance_keywords (set, optional): A set of lowercase compliance/sensitive keyword strings.
+                If None, loaded from the path in `config.ListFiles.compliance_keywords`.
+                Defaults to None.
 
         Raises:
             ValueError: If `sensitivity_threshold` is not between 0.0 and 1.0.
+            KeyError: If keywords are None and the required path is missing in config.
+            FileNotFoundError: If a configured keyword file does not exist.
         """
         if not 0.0 <= sensitivity_threshold <= 1.0:
+            logger.error(f"Invalid sensitivity_threshold: {sensitivity_threshold}. Must be between 0.0 and 1.0.")
             raise ValueError("sensitivity_threshold must be between 0.0 and 1.0")
 
         self.sensitivity = sensitivity_threshold
@@ -53,8 +62,42 @@ class RealtimeMonitor:
             'count': 0,
             'total_length': 0.0
         }
-        self._behavior_monitoring_factor = behavior_monitoring_factor # Consider making public if needed
+        self._behavior_monitoring_factor = behavior_monitoring_factor
         self.alert_log = []
+
+        # Load keywords if not provided directly
+        config = None # Initialize config to None
+        if refusal_keywords is not None:
+            self.refusal_keywords = set(refusal_keywords) # Ensure it's a set
+            logger.info(f"RealtimeMonitor initialized with {len(self.refusal_keywords)} refusal keywords provided directly.")
+        else:
+            if config is None: config = cfg_loader.get_config()
+            try:
+                refusal_path = config['ListFiles']['refusal_keywords']
+            except KeyError as e:
+                logger.error("Missing configuration for refusal keywords path: 'ListFiles.refusal_keywords' not found.")
+                raise KeyError("Missing configuration for refusal keywords path: 'ListFiles.refusal_keywords'") from e
+            loaded_list = cfg_loader.load_list_from_file(refusal_path)
+            if not loaded_list and not os.path.exists(os.path.abspath(refusal_path)):
+                raise FileNotFoundError(f"Configured refusal keywords file not found: {refusal_path}")
+            self.refusal_keywords = {kw.lower() for kw in loaded_list}
+            logger.info(f"Loaded {len(self.refusal_keywords)} refusal keywords from configured path '{refusal_path}'.")
+
+        if compliance_keywords is not None:
+            self.compliance_keywords = set(compliance_keywords)
+            logger.info(f"RealtimeMonitor initialized with {len(self.compliance_keywords)} compliance keywords provided directly.")
+        else:
+            if config is None: config = cfg_loader.get_config()
+            try:
+                compliance_path = config['ListFiles']['compliance_keywords']
+            except KeyError as e:
+                logger.error("Missing configuration for compliance keywords path: 'ListFiles.compliance_keywords' not found.")
+                raise KeyError("Missing configuration for compliance keywords path: 'ListFiles.compliance_keywords'") from e
+            loaded_list = cfg_loader.load_list_from_file(compliance_path)
+            if not loaded_list and not os.path.exists(os.path.abspath(compliance_path)):
+                raise FileNotFoundError(f"Configured compliance keywords file not found: {compliance_path}")
+            self.compliance_keywords = {kw.lower() for kw in loaded_list}
+            logger.info(f"Loaded {len(self.compliance_keywords)} compliance keywords from configured path '{compliance_path}'.")
 
     def analyze_output(self, prompt, response):
         """Analyzes a single LLM output for suspicious keywords.
@@ -76,14 +119,16 @@ class RealtimeMonitor:
         logger.debug(f"Analyzing output for prompt: '{prompt[:50]}...'")
         response_lower = response.lower()
 
-        if any(keyword in response_lower for keyword in REFUSAL_KEYWORDS):
+        # Check against loaded refusal keywords (already lowercase)
+        if any(keyword in response_lower for keyword in self.refusal_keywords):
             # Model refusing might be a *good* sign, not inherently suspicious.
             logger.info("Output analysis: Model response contained refusal keywords.")
             return False
 
         # Check if the response contains keywords often associated with data leaks.
         found_suspicious_keyword = None
-        for keyword in COMPLIANCE_KEYWORDS:
+        # Check against loaded compliance keywords (already lowercase)
+        for keyword in self.compliance_keywords:
             if keyword in response_lower:
                 found_suspicious_keyword = keyword
                 break # Found one, no need to check others
