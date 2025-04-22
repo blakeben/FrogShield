@@ -23,8 +23,9 @@ if sys.stdout.isatty():
     CYAN = '\033[96m'
     MAGENTA = '\033[95m'
     GRAY = '\033[90m'
+    WHITE = '\033[97m'
 else:
-    RESET = BOLD = RED = YELLOW = GREEN = BLUE = CYAN = MAGENTA = GRAY = ''
+    RESET = BOLD = RED = YELLOW = GREEN = BLUE = CYAN = MAGENTA = GRAY = WHITE = ''
 
 # --- Enhanced Logging Setup --- #
 log_format_simple = (
@@ -79,6 +80,8 @@ class ColorFormatter(logging.Formatter):
         elif message.startswith("[Test Result-Error]"):
             log_color = BOLD + RED
             message = message.replace("[Test Result-Error]", "❌ ERROR")
+        elif message.startswith("[LLM Output]"):
+            log_color = BOLD + WHITE
 
         record.msg = message
         record.log_color = log_color
