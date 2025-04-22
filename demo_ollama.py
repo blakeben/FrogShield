@@ -192,39 +192,47 @@ def run_simulation_turn(prompt, validator, monitor, llm_func, conversation_histo
     # --- Input Validation Stage ---
     logging.info("--- Stage: Input Validation --- ")
     is_malicious_input = validator.validate(prompt, conversation_history)
+
     if is_malicious_input:
         logging.warning("[RESULT-FAILED] Input Validation determined potential injection.")
         monitor.adaptive_response("Input Injection")
+        # --- LLM Interaction Stage (Skipped) ---
+        logging.info("--- Stage: LLM Interaction --- ")
+        logging.info("[Skipped] LLM Call skipped due to Input Validation failure.")
+        # --- Real-time Monitoring Stage (Skipped) ---
+        logging.info("--- Stage: Real-time Monitoring --- ")
+        logging.info("[Skipped] Monitoring skipped due to Input Validation failure.")
+        # Set the final response to the system block message
+        llm_response = "[System] Your request could not be processed due to security concerns."
     else:
         logging.info("[RESULT-PASSED] Input Validation determined input is likely safe.")
+        # --- LLM Interaction Stage ---
+        logging.info("--- Stage: LLM Interaction --- ")
+        llm_response = llm_func(prompt) # llm_func logs the actual sending
 
-    # --- LLM Interaction Stage ---
-    logging.info("--- Stage: LLM Interaction --- ")
-    llm_response = llm_func(prompt) # llm_func logs the actual sending
+        # --- Real-time Monitoring Stage ---
+        logging.info("--- Stage: Real-time Monitoring --- ")
+        if llm_response and not llm_response.startswith("[Error:"):
+            is_suspicious_output = monitor.analyze_output(prompt, llm_response)
+            is_anomalous_behavior = monitor.monitor_behavior(llm_response)
 
-    # --- Real-time Monitoring Stage ---
-    logging.info("--- Stage: Real-time Monitoring --- ")
-    if llm_response and not llm_response.startswith("[Error:"):
-        is_suspicious_output = monitor.analyze_output(prompt, llm_response)
-        is_anomalous_behavior = monitor.monitor_behavior(llm_response)
+            if is_suspicious_output or is_anomalous_behavior:
+                logging.warning("[RESULT-ALERT] Real-time Monitoring detected an issue.")
+                alert_type = "Suspicious Output" if is_suspicious_output else "Behavioral Anomaly"
+                monitor.adaptive_response(alert_type)
+            else:
+                logging.info("[RESULT-PASSED] Real-time Monitoring determined output is likely safe.")
 
-        if is_suspicious_output or is_anomalous_behavior:
-            logging.warning("[RESULT-ALERT] Real-time Monitoring detected an issue.")
-            alert_type = "Suspicious Output" if is_suspicious_output else "Behavioral Anomaly"
-            monitor.adaptive_response(alert_type)
+            monitor.update_baseline(llm_response)
         else:
-            logging.info("[RESULT-PASSED] Real-time Monitoring determined output is likely safe.")
+            # LLM Error occurred (Input Validation must have passed to get here)
+             logging.warning(f"[RESULT-ALERT] Skipping monitoring due to LLM error.")
 
-        monitor.update_baseline(llm_response)
-    else:
-        if not is_malicious_input: # LLM Error
-            logging.warning(f"[RESULT-ALERT] Skipping monitoring due to LLM error.")
-        else: # Skipped because Input Validation failed earlier
-             logging.info(f"[Skipped] Monitoring skipped as input validation failed earlier.")
+        # --- Final Response Presentation Stage (Only log if validation passed) ---
+        logging.info("--- Stage: Final Response Presentation --- ")
+        logging.info(f"[Final Response] To User: {llm_response}")
 
-    # --- Final Response Presentation Stage ---
-    logging.info("--- Stage: Final Response Presentation --- ")
-    logging.info(f"[Final Response] To User: {llm_response}")
+    # Return the determined response (either from LLM or the system block message)
     return llm_response
 
 # ---------------------------------------
