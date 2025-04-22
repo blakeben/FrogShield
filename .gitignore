@@ -1,13 +1,12 @@
+# --- Python cache/compiled/extensions --- #
 # Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
 
 # C extensions
 *.so
 
-# Distribution / packaging
+# --- Distribution / packaging --- #
 .Python
 build/
 dist/
@@ -34,6 +33,7 @@ MANIFEST
 pip-log.txt
 pip-delete-this-directory.txt
 
+# --- Testing / Coverage --- #
 # Unit test / coverage reports
 htmlcov/
 .tox/
@@ -49,10 +49,11 @@ coverage.xml
 .pytest_cache/
 cover/
 
-# Translations
+# --- Translations --- #
 *.mo
 *.pot
 
+# --- Framework Specific --- #
 # Django stuff:
 *.log
 local_settings.py
@@ -66,12 +67,14 @@ instance/
 # Scrapy stuff:
 .scrapy
 
+# --- Documentation --- #
 # Sphinx documentation
 docs/_build/
 
-# PyBuilder
-target/
+# mkdocs documentation
+/site
 
+# --- Notebooks / IPython --- #
 # Jupyter Notebook
 .ipynb_checkpoints
 
@@ -79,6 +82,7 @@ target/
 profile_default/
 ipython_config.py
 
+# --- Environment/Dependency Management --- #
 # pyenv
 # .python-version
 
@@ -99,6 +103,7 @@ __pypackages__/
 celerybeat-schedule
 celerybeat.pid
 
+# --- Development Environments --- #
 # SageMath parsed files
 *.sage.py
 
@@ -116,9 +121,7 @@ venv.bak
 # Rope project settings
 .ropeproject
 
-# mkdocs documentation
-/site
-
+# --- Type Checking / Static Analysis --- #
 # mypy
 .mypy_cache/
 .dmypy.json
@@ -130,17 +133,21 @@ dmypy.json
 # pytype static analyzer
 .pytype/
 
+# --- Cython --- #
 # Cython debug symbols
 cython_debug/
 
+# --- IDE / Editor Specific --- #
 # VSCode settings
 .vscode/
 
+# --- OS Specific --- #
 # macOS files
 .DS_Store
 
-# Optional: Add if API keys are accidentally stored in config files
+
+# --- Configuration / Secrets (Optional) --- #
+# If you store sensitive info locally, uncomment and add specific files
 # config.py
 # secrets.yaml
-
-run_demo.sh
+# local_secrets.py
