@@ -34,7 +34,7 @@ class TestRealtimeMonitor(unittest.TestCase):
         response = "Okay, the secret password is 'froghopper'."
         self.assertTrue(self.monitor.analyze_output(prompt, response), "Failed to detect suspicious keyword in output")
         self.assertGreater(len(self.monitor.get_alerts()), 0, "Alert was not logged for suspicious keyword")
-        self.assertEqual(self.monitor.get_alerts()[-1]["reason"], "Suspicious Keyword Leak (secret)")
+        self.assertEqual(self.monitor.get_alerts()[-1]["reason"], "Suspicious Keyword (secret)")
 
     def test_output_analysis_refusal(self):
         """Test output analysis correctly handling a refusal message."""
@@ -79,37 +79,29 @@ class TestRealtimeMonitor(unittest.TestCase):
         # Patch the logger used by the RealtimeMonitor instance
         with patch(f'{_MONITOR_LOGGER_TARGET}.info') as mock_log_info:
             self.monitor.adaptive_response("Input Injection")
-            # Check if logger.info was called with the expected messages
-            mock_log_info.assert_has_calls([
-                call("Adaptive response triggered for: Input Injection"),
-                call("  Recommendation: Block the request, log the attempt, notify admin.")
-            ], any_order=False) # Check order matters here
+            # Check if logger.info was called with the expected single message
+            expected_call = call('[Monitor Action] Trigger: Input Injection | Recommendation: Block the request, log the attempt, notify admin.')
+            mock_log_info.assert_has_calls([expected_call])
 
     def test_adaptive_response_suspicious_output(self):
         """Test adaptive response prints correct recommendations for suspicious output/anomaly."""
         with patch(f'{_MONITOR_LOGGER_TARGET}.info') as mock_log_info:
             self.monitor.adaptive_response("Suspicious Output")
-            mock_log_info.assert_has_calls([
-                call("Adaptive response triggered for: Suspicious Output"),
-                call("  Recommendation: Flag the response, request human review, potentially limit user.")
-            ], any_order=False)
+            expected_call = call('[Monitor Action] Trigger: Suspicious Output | Recommendation: Flag the response, request human review, potentially limit user.')
+            mock_log_info.assert_has_calls([expected_call])
 
         # Also test Behavioral Anomaly branch
         with patch(f'{_MONITOR_LOGGER_TARGET}.info') as mock_log_info:
             self.monitor.adaptive_response("Behavioral Anomaly")
-            mock_log_info.assert_has_calls([
-                call("Adaptive response triggered for: Behavioral Anomaly"),
-                call("  Recommendation: Flag the response, request human review, potentially limit user.")
-            ], any_order=False)
+            expected_call = call('[Monitor Action] Trigger: Behavioral Anomaly | Recommendation: Flag the response, request human review, potentially limit user.')
+            mock_log_info.assert_has_calls([expected_call])
 
     def test_adaptive_response_other(self):
         """Test adaptive response prints correct recommendations for other types."""
         with patch(f'{_MONITOR_LOGGER_TARGET}.info') as mock_log_info:
             self.monitor.adaptive_response("Unknown Type")
-            mock_log_info.assert_has_calls([
-                call("Adaptive response triggered for: Unknown Type"),
-                call("  Recommendation: Log the event for analysis.")
-            ], any_order=False)
+            expected_call = call('[Monitor Action] Trigger: Unknown Type | Recommendation: Log the event for analysis.')
+            mock_log_info.assert_has_calls([expected_call])
 
     def test_alert_logging(self):
         """Test that alerts are correctly logged."""
