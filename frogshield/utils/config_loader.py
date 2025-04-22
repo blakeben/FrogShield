@@ -108,4 +108,37 @@ def get_config(config_path='config.yaml'):
     global _CONFIG
     if _CONFIG is None:
         load_config(config_path)
-    return _CONFIG 
+    return _CONFIG
+
+
+def load_list_from_file(filepath):
+    """Loads a list of strings from a file, ignoring comments and empty lines.
+
+    Args:
+        filepath (str): The path to the file (relative or absolute). If relative,
+            it's resolved relative to the current working directory.
+            
+    Returns:
+        list: A list of non-empty, non-comment strings loaded from the file,
+              or an empty list if the file cannot be read or doesn't exist.
+    """
+    items = []
+    # Resolve path relative to CWD if not absolute
+    absolute_filepath = os.path.abspath(filepath)
+
+    if not os.path.exists(absolute_filepath):
+        logger.warning(f"List file not found at: {absolute_filepath}. Using empty list.")
+        return []
+
+    try:
+        with open(absolute_filepath, 'r', encoding='utf-8') as f:
+            for line in f:
+                item = line.strip()
+                if item and not item.startswith('#'):
+                    items.append(item)
+        logger.info(f"Loaded {len(items)} items from {absolute_filepath}.")
+    except Exception as e:
+        logger.error(f"Failed to load list from {absolute_filepath}: {e}. "
+                     f"Using empty list.", exc_info=True)
+        items = [] # Ensure empty list on error
+    return items 
