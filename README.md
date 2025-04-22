@@ -6,6 +6,18 @@ This project provides a basic, educational framework called `FrogShield` designe
 
 **Disclaimer:** This framework is an **educational prototype** developed for a cybersecurity course project. It demonstrates core defense concepts but lacks the robustness, sophistication, and comprehensive testing required for real-world, production environments. **Use with caution and for learning purposes only.**
 
+## Table of Contents
+
+-   [Purpose](#purpose)
+-   [Components](#components)
+-   [Configuration Options](#configuration-options)
+-   [Configuration Details (`config.yaml`)](#configuration-details-configyaml)
+-   [Logging](#logging)
+-   [How to Run](#how-to-run)
+-   [Current Status & Limitations](#current-status--limitations)
+-   [Future Development Ideas](#future-development-ideas)
+-   [Contributors](#contributors)
+
 ## Purpose
 
 The goal of `FrogShield` is to illustrate three key layers of defense against prompt injection:
