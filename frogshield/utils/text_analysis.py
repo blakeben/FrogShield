@@ -1,93 +1,117 @@
-"""
-Utility functions for text analysis (syntax, context) in FrogShield.
-Contributors:
-    - Ben Blake <ben.blake@tcu.edu>
-    - Tanner Hendrix <t.hendrix@tcu.edu>
+"""Utility functions for basic text analysis (syntax, context) in FrogShield.
+
+Provides placeholder functions for analyzing text syntax and contextual relevance.
+
+Warning:
+    These functions provide *very basic* checks suitable only for demonstration
+    purposes. They are **not** robust enough for production security use and
+    require significant enhancement with more sophisticated NLP techniques.
+
+Author: Ben Blake <ben.blake@tcu.edu>
+Contributor: Tanner Hendrix <t.hendrix@tcu.edu>
 """
 
 import logging
 
 logger = logging.getLogger(__name__)
 
-# Note: The functions in this module are intentionally simple and only for demonstration.
-# Real-world implementations would require much more sophisticated analysis.
+# Constants
+ZERO_WIDTH_CHARS = {"\u200B", "\u200C", "\u200D", "\uFEFF"}
+FORGET_PHRASES = {"forget what we talked about", "let's start over", "new topic"}
+
 
 def analyze_syntax(text, config):
-    """
-    Analyzes text for unusual syntax or hidden instructions.
-    Placeholder implementation.
+    """Analyzes text for unusual syntax or potentially hidden instructions.
+
+    Performs basic checks for:
+        - High ratio of non-alphanumeric/non-space characters.
+        - Presence of zero-width characters.
+        - Unusually long words.
+
+    Note:
+        This is a placeholder implementation using simple heuristics.
 
     Args:
         text (str): The input text to analyze.
-        config (dict): The loaded configuration dictionary (expects TextAnalysis section).
+        config (dict): The loaded configuration dictionary, expecting a
+            'TextAnalysis' section with 'syntax_non_alnum_threshold' and
+            'syntax_max_word_length' keys.
 
     Returns:
-        bool: True if suspicious syntax is found, False otherwise.
+        bool: True if potentially suspicious syntax is found, False otherwise.
     """
-    logger.warning("analyze_syntax is using placeholder logic and is not suitable for production use.")
-    syntax_non_alnum_threshold = config['TextAnalysis']['syntax_non_alnum_threshold']
-    syntax_max_word_length = config['TextAnalysis']['syntax_max_word_length']
+    logger.warning("analyze_syntax is using placeholder logic and is not "
+                   "suitable for production use.")
+    try:
+        syntax_non_alnum_threshold = config['TextAnalysis']['syntax_non_alnum_threshold']
+        syntax_max_word_length = config['TextAnalysis']['syntax_max_word_length']
+    except KeyError as e:
+        logger.error(f"Missing key in TextAnalysis config: {e}")
+        return False # Cannot perform check without config
 
     text_length = len(text)
-    if text_length == 0:
-        return False # Empty string is not suspicious
+    if not text: # Handles empty string
+        return False
 
-    # --- Placeholder Checks --- #
-
-    # 1. Excessive punctuation or special characters (crude measure)
-    # Slightly optimized count
+    # 1. Check for excessive punctuation or special characters
     non_alnum_count = text_length - sum(1 for char in text if char.isalnum() or char.isspace())
-    if (non_alnum_count / text_length) > syntax_non_alnum_threshold:
-        logger.debug(f"Syntax Check: High ratio non-alnum/space ({non_alnum_count}/{text_length}).")
+    # Avoid division by zero, though covered by the initial check
+    if text_length > 0 and (non_alnum_count / text_length) > syntax_non_alnum_threshold:
+        logger.debug("Syntax Check: High ratio of non-alphanumeric/non-space "
+                       f"characters detected ({non_alnum_count}/{text_length}).")
         return True
 
-    # 2. Check for potential hidden instructions using zero-width characters (basic)
-    zero_width_chars = {"\u200B", "\u200C", "\u200D", "\uFEFF"} # Use a set for faster lookups
-    if any(zwc in text for zwc in zero_width_chars):
+    # 2. Check for potential hidden instructions using zero-width characters
+    if any(zwc in text for zwc in ZERO_WIDTH_CHARS):
         logger.debug("Syntax Check: Found potential zero-width characters.")
         return True
 
     # 3. Check for unusually long words (might indicate encoded data)
-    # Avoid splitting if text is very short or already failed checks
-    if text_length > syntax_max_word_length: # Optimization: only split if potentially necessary
+    # Optimization: Only split if the text length could possibly contain such a word
+    if text_length > syntax_max_word_length:
         words = text.split()
         if any(len(word) > syntax_max_word_length for word in words):
-            logger.debug("Syntax Check: Found unusually long word.")
+            logger.debug(f"Syntax Check: Found word longer than {syntax_max_word_length} characters.")
             return True
 
     return False
 
+
 def analyze_context(text, conversation_history):
-    """
-    Analyzes text for context manipulation based on conversation history.
-    Placeholder implementation.
+    """Analyzes text for context manipulation based on conversation history.
+
+    Performs basic checks for:
+        - Explicit instruction overrides (e.g., "ignore instructions").
+        - Attempts to make the LLM forget context (e.g., "start over").
+
+    Note:
+        This is a placeholder implementation using simple keyword checks.
 
     Args:
         text (str): The current user input.
-        conversation_history (list): List of previous (user_input, llm_response) tuples.
+        conversation_history (list): List of previous (user_input, llm_response)
+            tuples.
 
     Returns:
         bool: True if context manipulation is suspected, False otherwise.
     """
-    logger.warning("analyze_context is using placeholder logic and is not suitable for production use.")
+    logger.warning("analyze_context is using placeholder logic and is not "
+                   "suitable for production use.")
     if not conversation_history:
         return False # Cannot analyze context without history
 
-    # --- Placeholder Checks --- #
     text_lower = text.lower() # Avoid repeated lowercasing
 
-    # 1. Check for explicit instruction overrides
-    # (Requires more advanced NLP for real accuracy - this is a very rough placeholder)
-    if "ignore" in text_lower and "instructions" in text_lower:
+    # 1. Check for explicit instruction overrides (very basic)
+    if "ignore" in text_lower and ("instructions" in text_lower or "prior" in text_lower):
         logger.debug("Context Check: Explicit instruction override attempt detected.")
         return True
 
     # 2. Check for attempts to make the LLM forget its role or previous turns
-    forget_phrases = {"forget what we talked about", "let's start over", "new topic"} # Use a set
-    if any(phrase in text_lower for phrase in forget_phrases):
+    if any(phrase in text_lower for phrase in FORGET_PHRASES):
         logger.debug("Context Check: Potential attempt to reset context detected.")
         return True
 
-    # Add more checks here, e.g., sudden topic shifts, referencing prior turns manipulatively.
+    # Placeholder for more advanced checks (e.g., topic shifts, manipulative referencing)
 
     return False
