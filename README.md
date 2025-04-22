@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**`FrogShield`** is an educational framework that demonstrates defensive strategies against prompt injection attacks in Large Language Models (LLMs).
+`FrogShield` is an educational framework that demonstrates defensive strategies against prompt injection attacks in Large Language Models (LLMs).
 
 **⚠️ Disclaimer:** This framework is an **educational prototype**. It lacks the robustness, sophistication, and comprehensive testing required for production environments. **Use with caution and for learning purposes only.**
 
@@ -134,13 +134,17 @@ These settings control the placeholder helper functions in `frogshield.utils.tex
 2.  **Set up Python Environment:** (Recommended)
     ```bash
     python3 -m venv venv
-    source venv/bin/activate  # On Windows use venv\Scripts\activate
+    source venv/bin/activate
+    # On Windows use venv\Scripts\activate
     ```
 
 3.  **Install Dependencies:** Install the core library (editable mode) and demo dependencies.
     ```bash
-    pip install -e .           # Installs frogshield + core deps (PyYAML)
-    pip install -r requirements.txt  # Installs demo deps (ollama)
+    # Installs frogshield + core deps (PyYAML)
+    pip install -e .
+
+    # Installs demo deps (ollama)
+    pip install -r requirements.txt
     ```
 
 4.  **Prepare Ollama (if using `demo_ollama.py`):**
