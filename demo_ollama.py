@@ -201,7 +201,6 @@ def run_simulation_turn(prompt, validator, monitor, llm_func, conversation_histo
     # --- LLM Interaction Stage ---
     logging.info("--- Stage: LLM Interaction --- ")
     llm_response = llm_func(prompt) # llm_func logs the actual sending
-    logging.info(f"[LLM Response] Received: {llm_response}")
 
     # --- Real-time Monitoring Stage ---
     logging.info("--- Stage: Real-time Monitoring --- ")
