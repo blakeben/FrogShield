@@ -1,24 +1,27 @@
+# Build system configuration (PEP 517/518)
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["setuptools>=61.0"] # Specify build tool requirements
+build-backend = "setuptools.build_meta" # Specify the backend used to build the package
 
+# Project metadata (PEP 621)
 [project]
-name = "frogshield"
-version = "0.1.0"
-description = "LLM Prompt Injection Defense Framework (Educational Demo)"
-readme = "README.md"
-requires-python = ">=3.13"
-license = {text = "MIT License"}
+name = "frogshield"                 # Name of the package
+version = "0.1.0"                  # Version of the package
+description = "LLM Prompt Injection Defense Framework (Educational Demo)" # Short description
+readme = "README.md"                # File containing the long description
+requires-python = ">=3.13"          # Minimum Python version required
+license = {text = "MIT License"}     # License information
 authors = [
   {name = "Ben Blake", email = "ben.blake@tcu.edu"},
-  {name = "Tanner Hendrix", email = "t.hendrix@tcu.edu"},
-]
-# Add dependencies required by the library itself (not just demos)
-dependencies = [
-    "PyYAML>=5.0",
 ]
 
+# Core library dependencies (installable via `pip install .` or `pip install -e .`)
+dependencies = [
+    "PyYAML>=5.0",                 # Required for loading config.yaml
+]
+
+# Setuptools specific configuration for package discovery
 [tool.setuptools.packages.find]
-where = ["."] # Look for packages in the current directory
-include = ["frogshield*"] # Include frogshield and its subpackages
-exclude = ["frogshield.tests*"] # Exclude tests from the built package 
+where = ["."]                    # Root directory to search for packages (project root)
+include = ["frogshield*"]        # Patterns for packages to include (frogshield and subpackages)
+exclude = ["frogshield.tests*"]  # Patterns for packages to exclude (don't install tests) 
