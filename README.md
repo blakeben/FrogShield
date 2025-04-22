@@ -1,24 +1,65 @@
-# FrogShield: LLM Prompt Injection Defense Framework (Educational Demo)\n\n[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)\n\nThis project provides a basic, educational framework called `FrogShield` designed to demonstrate concepts for defending Large Language Models (LLMs) against prompt injection attacks.\n\n**Disclaimer:** This framework is an **educational prototype** developed for a cybersecurity course project. It demonstrates core defense concepts but lacks the robustness, sophistication, and comprehensive testing required for real-world, production environments. **Use with caution and for learning purposes only.**\n\n## Purpose\n\nThe goal of `FrogShield` is to illustrate three key layers of defense against prompt injection:\n\n1.  **Input Validation:** Analyzing incoming prompts against known malicious patterns (loaded from `patterns.txt`) and using placeholder functions (`frogshield/utils/text_analysis.py`) to check for suspicious syntax or context manipulation.\n2.  **Model Hardening (Conceptual):** The `frogshield/model_hardener.py` module provides methods for *generating* adversarial examples and testing model boundaries conceptually. It does **not** perform actual model training.\n3.  **Real-time Monitoring:** Analyzing the LLM's output for suspicious keywords or refusal messages, and monitoring basic behavioral patterns (like response length) for anomalies using placeholder logic (`frogshield/realtime_monitor.py`).\n\n## Components\n\nThe project includes the following key files and directories:\n
--   `README.md`: This file.\n
--   `LICENSE`: The MIT license file.\n
--   `pyproject.toml`: Project build configuration and core library dependencies (e.g., `PyYAML`).\n
--   `requirements.txt`: Lists additional dependencies needed for specific demos (e.g., `ollama`).\n
--   `config.yaml`: Default configuration file for tuning FrogShield components.\n
--   `patterns.txt`: Default file containing known injection patterns (one per line).\n
--   `frogshield/`: Directory containing the core defense library modules.\n    -   `__init__.py`: Makes `frogshield` importable and defines the public API (`InputValidator`, `RealtimeMonitor`, `ModelHardener`).\n    -   `input_validator.py`: Contains the `InputValidator` class for checking user input.\n    -   `model_hardener.py`: Contains the `ModelHardener` class for conceptual hardening tasks.\n    -   `realtime_monitor.py`: Contains the `RealtimeMonitor` class for checking LLM output.\n    -   `utils/`: Sub-directory for shared utilities.\n        -   `__init__.py`: Package initializer.\n        -   `config_loader.py`: Utility for loading `config.yaml`.\n        -   `text_analysis.py`: Placeholder functions for syntax/context analysis (used by `InputValidator`).\n    -   `tests/`: Contains unit tests using Python's `unittest` framework.\n        -   Includes tests for validation, monitoring, and hardening modules.\n
--   `demo_mock.py`: Script demonstrating FrogShield with a simple, built-in mock LLM.\n
--   `demo_ollama.py`: Script demonstrating FrogShield with a local LLM run via Ollama.\n
--   `run_demo.sh`: Shell script to run the `demo_ollama.py` steps sequentially and interactively.\n
--   `.gitignore`: Standard Python gitignore file.\n
-## Configuration Options\n
-### Main Configuration (`config.yaml`)\n
-Most configurable parameters for `InputValidator`, `RealtimeMonitor`, and the underlying `TextAnalysis` utilities are defined in `config.yaml` located in the project root. The demo scripts load this file by default. See the section below for details on specific parameters.\n
-### Injection Patterns (`patterns.txt`)\n
-Known injection patterns used by `InputValidator` are loaded from `patterns.txt` (in the project root) by default. Customize this by:\n
--   Editing `patterns.txt` (add/remove patterns, one per line; lines starting with `#` are ignored).\n-   Passing a specific file path to the `InputValidator` constructor: `InputValidator(..., patterns_file='path/to/your/patterns.txt')`.\n-   Passing a list of patterns directly: `InputValidator(..., patterns=['pattern1', 'pattern2'])`.\n
-### Overriding Config Values\n
-When initializing components directly (like in the demo scripts or your own code), you typically pass values loaded from the configuration file. You can override specific values by modifying the loaded dictionary before passing it or by passing arguments directly to the constructors if the class supports it (check the `__init__` methods for required parameters like `context_window`, `sensitivity_threshold`, etc.).\n
-## Configuration Details (`config.yaml`)\n
+# FrogShield: LLM Prompt Injection Defense Framework (Educational Demo)
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+This project provides a basic, educational framework called `FrogShield` designed to demonstrate concepts for defending Large Language Models (LLMs) against prompt injection attacks.
+
+**Disclaimer:** This framework is an **educational prototype** developed for a cybersecurity course project. It demonstrates core defense concepts but lacks the robustness, sophistication, and comprehensive testing required for real-world, production environments. **Use with caution and for learning purposes only.**
+
+## Purpose
+
+The goal of `FrogShield` is to illustrate three key layers of defense against prompt injection:
+
+1.  **Input Validation:** Analyzing incoming prompts against known malicious patterns (loaded from `patterns.txt`) and using placeholder functions (`frogshield/utils/text_analysis.py`) to check for suspicious syntax or context manipulation.
+2.  **Model Hardening (Conceptual):** The `frogshield/model_hardener.py` module provides methods for *generating* adversarial examples and testing model boundaries conceptually. It does **not** perform actual model training.
+3.  **Real-time Monitoring:** Analyzing the LLM's output for suspicious keywords or refusal messages, and monitoring basic behavioral patterns (like response length) for anomalies using placeholder logic (`frogshield/realtime_monitor.py`).
+
+## Components
+
+The project includes the following key files and directories:
+
+-   `README.md`: This file.
+-   `LICENSE`: The MIT license file.
+-   `pyproject.toml`: Project build configuration and core library dependencies (e.g., `PyYAML`).
+-   `requirements.txt`: Lists additional dependencies needed for specific demos (e.g., `ollama`).
+-   `config.yaml`: Default configuration file for tuning FrogShield components.
+-   `patterns.txt`: Default file containing known injection patterns (one per line).
+-   `frogshield/`: Directory containing the core defense library modules.
+    -   `__init__.py`: Makes `frogshield` importable and defines the public API (`InputValidator`, `RealtimeMonitor`, `ModelHardener`).
+    -   `input_validator.py`: Contains the `InputValidator` class for checking user input.
+    -   `model_hardener.py`: Contains the `ModelHardener` class for conceptual hardening tasks.
+    -   `realtime_monitor.py`: Contains the `RealtimeMonitor` class for checking LLM output.
+    -   `utils/`: Sub-directory for shared utilities.
+        -   `__init__.py`: Package initializer.
+        -   `config_loader.py`: Utility for loading `config.yaml`.
+        -   `text_analysis.py`: Placeholder functions for syntax/context analysis (used by `InputValidator`).
+    -   `tests/`: Contains unit tests using Python's `unittest` framework.
+        -   Includes tests for validation, monitoring, and hardening modules.
+-   `demo_mock.py`: Script demonstrating `FrogShield` with a simple, built-in mock LLM.
+-   `demo_ollama.py`: Script demonstrating `FrogShield` with a local LLM run via Ollama.
+-   `run_demo.sh`: Shell script to run the `demo_ollama.py` steps sequentially and interactively.
+-   `.gitignore`: Standard Python gitignore file.
+
+## Configuration Options
+
+### Main Configuration (`config.yaml`)
+
+Most configurable parameters for `InputValidator`, `RealtimeMonitor`, and the underlying `TextAnalysis` utilities are defined in `config.yaml` located in the project root. The demo scripts load this file by default. See the section below for details on specific parameters.
+
+### Injection Patterns (`patterns.txt`)
+
+Known injection patterns used by `InputValidator` are loaded from `patterns.txt` (in the project root) by default. Customize this by:
+
+-   Editing `patterns.txt` (add/remove patterns, one per line; lines starting with `#` are ignored).
+-   Passing a specific file path to the `InputValidator` constructor: `InputValidator(..., patterns_file='path/to/your/patterns.txt')`.
+-   Passing a list of patterns directly: `InputValidator(..., patterns=['pattern1', 'pattern2'])`.
+
+### Overriding Config Values
+
+When initializing components directly (like in the demo scripts or your own code), you typically pass values loaded from the configuration file. You can override specific values by modifying the loaded dictionary before passing it or by passing arguments directly to the constructors if the class supports it (check the `__init__` methods for required parameters like `context_window`, `sensitivity_threshold`, etc.).
+
+## Configuration Details (`config.yaml`)
+
 FrogShield's behavior can be tuned via the `config.yaml` file. Here's an explanation of each parameter:
 
 ### `InputValidator`
@@ -72,7 +113,11 @@ These settings control the placeholder helper functions in `frogshield.utils.tex
 
 ## How to Run
 
-1.  **Clone the Repository:**\n    `git clone <repository_url>`\n    `cd FrogShield`
+1.  **Clone the Repository:**
+    ```bash
+    git clone <repository_url>  # Replace with actual URL
+    cd FrogShield
+    ```
 
 2.  **Set up Python Environment:** (Recommended)
     ```bash
@@ -135,6 +180,6 @@ These settings control the placeholder helper functions in `frogshield.utils.tex
 
 ## Contributors
 
--   Ben Blake `<ben.blake@tcu.edu>`
--   Tanner Hendrix `<t.hendrix@tcu.edu>`
+-   Author: Ben Blake `<ben.blake@tcu.edu>`
+-   Contributor: Tanner Hendrix `<t.hendrix@tcu.edu>`
 
