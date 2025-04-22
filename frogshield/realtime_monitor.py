@@ -122,24 +122,24 @@ class RealtimeMonitor:
 
     def adaptive_response(self, detection_type):
         """
-        Suggests or triggers an adaptive response based on the type of detection.
+        Logs a recommended adaptive response based on the type of detection.
 
         Args:
             detection_type (str): The type of threat detected (e.g., 'Input Injection', 'Suspicious Output').
         """
-        # Use a distinct prefix for these logs
-        logger.info(f"[Monitor Action] Adaptive response triggered for: {detection_type}")
+        recommendation = "Log the event for analysis."
         if detection_type == "Input Injection":
-            logger.info("[Monitor Action] Recommendation: Block the request, log the attempt, notify admin.")
+            recommendation = "Block the request, log the attempt, notify admin."
             # In a real system: raise SecurityException("Input injection detected")
         elif detection_type == "Suspicious Output" or detection_type == "Behavioral Anomaly":
-            logger.info("[Monitor Action] Recommendation: Flag the response, request human review, potentially limit user.")
+            recommendation = "Flag the response, request human review, potentially limit user."
             # In a real system: return "[System Alert: Response flagged for review]"
-        else:
-            logger.info("[Monitor Action] Recommendation: Log the event for analysis.")
+
+        # Combine trigger and recommendation into one log message
+        logger.info(f"[Monitor Action] Trigger: {detection_type} | Recommendation: {recommendation}")
 
     def log_alert(self, prompt, response, reason):
-        """Logs a detected security alert."""
+        """Logs a detected security alert to an internal list."""
         log_entry = {
             "timestamp": datetime.datetime.now().isoformat(),
             "prompt": prompt,
@@ -147,7 +147,6 @@ class RealtimeMonitor:
             "reason": reason
         }
         self.alert_log.append(log_entry)
-        logger.warning(f"Security alert logged: {reason}")
 
     def get_alerts(self):
         """Returns the list of logged alerts."""
