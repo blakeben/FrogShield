@@ -10,8 +10,9 @@
 
 -   [Purpose](#purpose)
 -   [Components](#components)
--   [Configuration Options](#configuration-options)
--   [Configuration Details (`config.yaml`)](#configuration-details-configyaml)
+-   [Configuration](#configuration)
+    -   [Main Configuration (`config.yaml`)](#main-configuration-configyaml)
+    -   [List Files (`config_data/`)](#list-files-config_data)
 -   [Logging](#logging)
 -   [How to Run](#how-to-run)
 -   [Current Status & Limitations](#current-status--limitations)
@@ -22,9 +23,9 @@
 
 The goal of `FrogShield` is to illustrate three key layers of defense against prompt injection:
 
-1.  **Input Validation:** Analyzing incoming prompts against known malicious patterns (loaded from `patterns.txt`) and using placeholder functions (`frogshield/utils/text_analysis.py`) to check for suspicious syntax or context manipulation.
+1.  **Input Validation:** Analyzing incoming prompts against known malicious patterns (loaded from `config_data/patterns.txt`) and using placeholder functions (`frogshield/utils/text_analysis.py`) to check for suspicious syntax or context manipulation.
 2.  **Model Hardening (Conceptual):** The `frogshield/model_hardener.py` module provides methods for *generating* adversarial examples and testing model boundaries conceptually. It does **not** perform actual model training.
-3.  **Real-time Monitoring:** Analyzing the LLM's output for suspicious keywords or refusal messages, and monitoring basic behavioral patterns (like response length) for anomalies using placeholder logic (`frogshield/realtime_monitor.py`).
+3.  **Real-time Monitoring:** Analyzing the LLM's output for suspicious keywords (loaded from `config_data/`) or refusal messages, and monitoring basic behavioral patterns (like response length) for anomalies using placeholder logic (`frogshield/realtime_monitor.py`).
 
 ## Components
 
@@ -34,8 +35,13 @@ The project includes the following key files and directories:
 -   `LICENSE`: The MIT license file.
 -   `pyproject.toml`: Project build configuration and core library dependencies (e.g., `PyYAML`).
 -   `requirements.txt`: Lists additional dependencies needed for specific demos (e.g., `ollama`).
--   `config.yaml`: Default configuration file for tuning FrogShield components.
--   `patterns.txt`: Default file containing known injection patterns (one per line).
+-   `config.yaml`: **Main configuration file** for tuning FrogShield components and specifying list file paths.
+-   `config_data/`: **Directory containing external data files:**
+    -   `patterns.txt`: Default file containing known injection patterns.
+    -   `refusal_keywords.txt`: Keywords indicating appropriate LLM refusal.
+    -   `compliance_keywords.txt`: Keywords indicating potential sensitive data leaks or compliance.
+    -   `sample_prompts.txt`: Sample prompts used by `demo_mock.py`.
+    -   `boundary_refusal_keywords.txt`: Refusal keywords used by `demo_ollama.py` boundary tests.
 -   `frogshield/`: Directory containing the core defense library modules.
     -   `__init__.py`: Makes `frogshield` importable and defines the public API (`InputValidator`, `RealtimeMonitor`, `ModelHardener`).
     -   `input_validator.py`: Contains the `InputValidator` class for checking user input.
@@ -43,7 +49,7 @@ The project includes the following key files and directories:
     -   `realtime_monitor.py`: Contains the `RealtimeMonitor` class for checking LLM output.
     -   `utils/`: Sub-directory for shared utilities.
         -   `__init__.py`: Package initializer.
-        -   `config_loader.py`: Utility for loading `config.yaml`.
+        -   `config_loader.py`: Utility for loading `config.yaml` and list files.
         -   `text_analysis.py`: Placeholder functions for syntax/context analysis (used by `InputValidator`).
     -   `tests/`: Contains unit tests using Python's `unittest` framework.
         -   Includes tests for validation, monitoring, and hardening modules.
@@ -52,82 +58,62 @@ The project includes the following key files and directories:
 -   `run_demo.sh`: Shell script to run the `demo_ollama.py` steps sequentially and interactively.
 -   `.gitignore`: Standard Python gitignore file.
 
-## Configuration Options
+## Configuration
+
+FrogShield's behavior and external data sources are configured primarily through `config.yaml`.
 
 ### Main Configuration (`config.yaml`)
 
-Most configurable parameters for `InputValidator`, `RealtimeMonitor`, and the underlying `TextAnalysis` utilities are defined in `config.yaml` located in the project root. The demo scripts load this file by default. See the section below for details on specific parameters.
+Most configurable parameters for `InputValidator`, `RealtimeMonitor`, and the underlying `TextAnalysis` utilities are defined in `config.yaml` located in the project root. The components load these settings automatically if not overridden during instantiation.
 
-### Injection Patterns (`patterns.txt`)
+#### Parameter Details:
 
-Known injection patterns used by `InputValidator` are loaded from `patterns.txt` (in the project root) by default. Customize this by:
+##### `InputValidator`
 
--   Editing `patterns.txt` (add/remove patterns, one per line; lines starting with `#` are ignored).
--   Passing a specific file path to the `InputValidator` constructor: `InputValidator(..., patterns_file='path/to/your/patterns.txt')`.
--   Passing a list of patterns directly: `InputValidator(..., patterns=['pattern1', 'pattern2'])`.
+*   `context_window` (`int`): Number of past conversation turns to consider for context analysis.
 
-### Overriding Config Values
+##### `RealtimeMonitor`
 
-When initializing components directly (like in the demo scripts or your own code), you typically pass values loaded from the configuration file. You can override specific values by modifying the loaded dictionary before passing it or by passing arguments directly to the constructors if the class supports it (check the `__init__` methods for required parameters like `context_window`, `sensitivity_threshold`, etc.).
+*   `sensitivity_threshold` (`float`, 0.0-1.0): Base sensitivity for detecting behavioral anomalies (e.g., response length deviations).
+*   `initial_avg_length` (`int`): Starting guess for average response length (used initially).
+*   `behavior_monitoring_factor` (`float`): Multiplier applied to `sensitivity_threshold` to adjust the acceptable deviation range for length checks.
 
-## Configuration Details (`config.yaml`)
+##### `TextAnalysis`
 
-FrogShield's behavior can be tuned via the `config.yaml` file. Here's an explanation of each parameter:
+*   `syntax_non_alnum_threshold` (`float`): Max allowed ratio of non-alphanumeric/non-space characters in a prompt.
+*   `syntax_max_word_length` (`int`): Max allowed length for a single "word".
 
-### `InputValidator`
+##### `ListFiles`
 
-These settings control the `frogshield.InputValidator` class.
+*   **Purpose:** Defines the paths (relative to the project root) for external data files used by components and demos.
+*   **Keys:**
+    *   `patterns`: Path to injection patterns file (used by `InputValidator`).
+    *   `refusal_keywords`: Path to refusal keywords file (used by `RealtimeMonitor`).
+    *   `compliance_keywords`: Path to compliance/sensitive keywords file (used by `RealtimeMonitor`).
+    *   `sample_prompts`: Path to sample prompts file (used by `demo_mock.py`).
+    *   `boundary_refusal_keywords`: Path to boundary test refusal keywords (used by `demo_ollama.py`).
 
-*   `context_window` (`int`):
-    *   **Purpose:** Specifies how many previous turns (user prompt + LLM response pairs) the validator should consider when analyzing the context of a new prompt.
-    *   **How it works:** Used by the `_analyze_context` method (which currently relies on the placeholder `utils.text_analysis.analyze_context`) to detect potential context manipulation attempts.
-    *   **Effect:** A larger value provides more historical context but may slightly increase processing time.
+### List Files (`config_data/`)
 
-### `RealtimeMonitor`
+External lists like injection patterns and keywords are stored as plain text files (one item per line, `#` comments ignored) within the `config_data/` directory. The specific file used for each list type is determined by the paths set in the `ListFiles` section of `config.yaml`.
 
-These settings control the `frogshield.RealtimeMonitor` class.
+To customize these lists:
 
-*   `sensitivity_threshold` (`float`):
-    *   **Purpose:** Sets the base sensitivity for detecting behavioral anomalies in LLM responses, primarily focusing on response length deviations (0.0 to 1.0).
-    *   **How it works:** Used within the `monitor_behavior` method. Higher values mean more sensitivity to smaller deviations.
-    *   **Effect:** Combined with `behavior_monitoring_factor`, this defines the acceptable deviation range from the baseline average response length.
-*   `initial_avg_length` (`int`):
-    *   **Purpose:** Provides a starting guess for the average length of a "normal" LLM response, used before enough history is gathered.
-    *   **How it works:** Initializes the baseline average length. This value is gradually replaced by the actual running average as more responses are processed by `update_baseline`.
-    *   **Effect:** Influences anomaly detection sensitivity primarily during the initial interactions.
-*   `behavior_monitoring_factor` (`float`):
-    *   **Purpose:** Multiplies the `sensitivity_threshold` to widen or narrow the acceptable bounds for response length deviation.
-    *   **How it works:** In `monitor_behavior`, the acceptable range is calculated roughly as `avg_length * (1 +/- sensitivity_threshold * behavior_monitoring_factor)`.
-    *   **Effect:** A larger factor widens the acceptable range, making length anomaly detection *less* sensitive (requiring larger deviations to trigger an alert).
-
-### `TextAnalysis`
-
-These settings control the placeholder helper functions in `frogshield.utils.text_analysis`, currently used by `InputValidator`'s `_analyze_syntax` method.
-
-*   `syntax_non_alnum_threshold` (`float`):
-    *   **Purpose:** Defines the maximum allowed ratio of non-alphanumeric/non-space characters in a prompt.
-    *   **How it works:** `analyze_syntax` calculates this ratio. Exceeding the threshold flags the input.
-    *   **Effect:** Lowering this value makes the validator more sensitive to inputs with high symbol density.
-*   `syntax_max_word_length` (`int`):
-    *   **Purpose:** Sets the maximum allowed length for any single "word" (contiguous non-whitespace characters).
-    *   **How it works:** `analyze_syntax` checks word lengths.
-    *   **Effect:** Helps catch potential obfuscation using extremely long character sequences. Prompts with words longer than this limit are flagged.
+1.  **Edit the files** within `config_data/` directly.
+2.  **Modify `config.yaml`** to point to different files (ensure they are placed correctly relative to the project root).
+3.  **Pass the content directly:** When initializing components like `InputValidator` or `RealtimeMonitor` programmatically, you can pass the list/set content directly via arguments (e.g., `patterns=[...]`, `refusal_keywords={...}`), bypassing the file loading mechanism.
 
 ## Logging
 
 -   The `frogshield` library modules use Python's standard `logging` module.
 -   The demo scripts configure basic console logging to show `INFO` level messages by default.
--   To see more detailed `DEBUG` messages (e.g., specific pattern matches, analysis steps), modify the `logging.basicConfig` level in the relevant demo script (e.g., `demo_ollama.py`):
-    ```python
-    # Change level=logging.INFO to level=logging.DEBUG
-    logging.basicConfig(level=logging.DEBUG, ...)
-    ```
+-   To see more detailed `DEBUG` messages (e.g., specific pattern matches, analysis steps), use the `--debug` flag when running the demo scripts (e.g., `python demo_ollama.py --prompt "Hello" --debug`).
 
 ## How to Run
 
 1.  **Clone the Repository:**
     ```bash
-    git clone https://github.com/blakeben/FrogShield.git
+    git clone https://github.com/blakeben/FrogShield.git # Or your fork
     cd FrogShield
     ```
 
@@ -147,12 +133,14 @@ These settings control the placeholder helper functions in `frogshield.utils.tex
     pip install -r requirements.txt
     ```
 
-4.  **Prepare Ollama (if using `demo_ollama.py`):**
+4.  **Verify Configuration:** Ensure `config.yaml` and the necessary files within `config_data/` exist.
+
+5.  **Prepare Ollama (if using `demo_ollama.py`):**
     *   Ensure Ollama is installed and the server is running (`ollama serve` in a separate terminal).
     *   Pull the desired model (the demo defaults to `llama3`): `ollama pull llama3`
 
-5.  **Run Demos:**
-    *   **Mock Demo:** Runs through predefined prompts using the internal mock LLM.
+6.  **Run Demos:**
+    *   **Mock Demo:** Runs through predefined prompts loaded from `config_data/sample_prompts.txt`.
         ```bash
         python demo_mock.py
         ```
@@ -165,19 +153,21 @@ These settings control the placeholder helper functions in `frogshield.utils.tex
         ```bash
         python demo_ollama.py --prompt "Your prompt here"
         ```
-    *   **Ollama Demo (Boundary Test):** Run the predefined boundary test suite.
+    *   **Ollama Demo (Boundary Test):** Run the predefined boundary test suite using keywords from `config_data/boundary_refusal_keywords.txt`.
         ```bash
         python demo_ollama.py --test-boundaries
         ```
+    *   **Specify Model/Debug:** Use `--model <model_name>` or `--debug` with `demo_ollama.py`.
 
-6.  **Run Unit Tests:**
+7.  **Run Unit Tests:**
     ```bash
-    python -m unittest discover frogshield/tests
+    python -m unittest discover -v
     ```
 
 ## Current Status & Limitations
 
 -   **Basic Functionality:** Core components (`InputValidator`, `RealtimeMonitor`, `ModelHardener`) are implemented with foundational logic.
+-   **Centralized Config:** List data (patterns, keywords) is externalized to `config_data/` and managed via `config.yaml`.
 -   **Placeholder Analysis:** Syntax/context analysis (`text_analysis.py`) and behavioral monitoring use simplified, placeholder heuristics.
 -   **Conceptual Hardening:** `ModelHardener` demonstrates boundary testing and example generation concepts but lacks integration with actual model training.
 -   **Packaging:** Basic packaging (`pyproject.toml`) allows local editable installation.
