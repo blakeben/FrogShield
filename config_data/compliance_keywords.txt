@@ -1,0 +1,10 @@
+# Keywords often associated with sensitive data or compliance with harmful requests.
+# One keyword/phrase per line. Comments start with #.
+
+secret
+confidential
+internal data
+password
+private key
+API key
+user data 
