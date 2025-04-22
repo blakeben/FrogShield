@@ -1,14 +1,21 @@
 # Default configuration for FrogShield components
 
 InputValidator:
+  # Number of previous conversation turns to consider for context analysis
   context_window: 5
 
 RealtimeMonitor:
+  # Sensitivity threshold for detecting behavioral anomalies (0.0 to 1.0).
+  # Higher values mean more sensitivity to deviations from the baseline.
   sensitivity_threshold: 0.8
+  # Initial guess for average response length used before enough history is gathered.
   initial_avg_length: 50
+  # Factor modulating sensitivity effect on length deviation checks.
   behavior_monitoring_factor: 2
 
 TextAnalysis:
+  # Placeholder threshold: Max ratio of non-alphanumeric/non-space chars allowed.
   syntax_non_alnum_threshold: 0.3
+  # Placeholder threshold: Max allowed length for a single word.
   syntax_max_word_length: 50
   
