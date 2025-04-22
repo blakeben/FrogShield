@@ -2,9 +2,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-This project provides a basic, educational framework called `FrogShield` designed to demonstrate concepts for defending Large Language Models (LLMs) against prompt injection attacks.
+**`FrogShield`** is an educational framework that demonstrates defensive strategies against prompt injection attacks in Large Language Models (LLMs).
 
-**Disclaimer:** This framework is an **educational prototype** developed for a cybersecurity course project. It demonstrates core defense concepts but lacks the robustness, sophistication, and comprehensive testing required for real-world, production environments. **Use with caution and for learning purposes only.**
+**⚠️ Disclaimer:** This framework is an **educational prototype**. It lacks the robustness, sophistication, and comprehensive testing required for production environments. **Use with caution and for learning purposes only.**
 
 ## Table of Contents
 
@@ -134,7 +134,7 @@ These settings control the placeholder helper functions in `frogshield.utils.tex
 2.  **Set up Python Environment:** (Recommended)
     ```bash
     python3 -m venv venv
-    source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+    source venv/bin/activate  # On Windows use venv\Scripts\activate
     ```
 
 3.  **Install Dependencies:** Install the core library (editable mode) and demo dependencies.
