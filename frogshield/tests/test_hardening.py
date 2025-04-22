@@ -9,6 +9,7 @@ Contributor: Tanner Hendrix <t.hendrix@tcu.edu>
 
 import unittest
 from frogshield.model_hardener import ModelHardener
+from frogshield.model_hardener import _DEFAULT_INJECTION_PHRASE
 
 # --- Mock LLM Function for Testing --- #
 
@@ -54,7 +55,7 @@ class TestModelHardener(unittest.TestCase):
     def test_generate_adversarial_example_direct(self):
         """Verify direct adversarial example generation adds injection phrase correctly."""
         original_prompt = "What is the weather?"
-        injection_phrase = self.hardener._DEFAULT_INJECTION_PHRASE # Access constant for check
+        injection_phrase = _DEFAULT_INJECTION_PHRASE
         adversarial = self.hardener.generate_adversarial_example(original_prompt, attack_type="direct")
         self.assertTrue(adversarial.startswith(original_prompt),
                         "Direct adversarial example should start with the original prompt.")
@@ -66,7 +67,7 @@ class TestModelHardener(unittest.TestCase):
     def test_generate_adversarial_example_indirect(self):
         """Verify indirect adversarial example generation embeds phrase correctly."""
         original_prompt = "Summarize this document."
-        injection_phrase = self.hardener._DEFAULT_INJECTION_PHRASE
+        injection_phrase = _DEFAULT_INJECTION_PHRASE
         adversarial = self.hardener.generate_adversarial_example(original_prompt, attack_type="indirect")
         self.assertIn(original_prompt, adversarial,
                       "Original prompt missing from indirect adversarial example.")
@@ -106,7 +107,7 @@ class TestModelHardener(unittest.TestCase):
         # Check if new items containing the injection phrase were added
         added_items = augmented_set - original_set
         self.assertTrue(any(
-            isinstance(item, str) and self.hardener._DEFAULT_INJECTION_PHRASE in item
+            isinstance(item, str) and _DEFAULT_INJECTION_PHRASE in item
             for item in added_items
         ), "Expected at least one added item to contain the default injection phrase.")
 
