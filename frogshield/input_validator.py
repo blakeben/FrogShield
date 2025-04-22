@@ -10,44 +10,36 @@ Contributor: Tanner Hendrix <t.hendrix@tcu.edu>
 import logging
 import os
 from .utils.text_analysis import analyze_syntax, analyze_context
-from .utils import config_loader
+from .utils import config_loader as cfg_loader
 
 logger = logging.getLogger(__name__)
-
-# Determine the absolute path to the default patterns file relative to this script
-_MODULE_DIR = os.path.dirname(__file__)
-_DEFAULT_PATTERNS_FILE = os.path.abspath(os.path.join(_MODULE_DIR, '..', 'patterns.txt'))
-
 
 class InputValidator:
     """Validates user input against known prompt injection patterns and techniques.
 
-    Uses a combination of pattern matching, syntax analysis (placeholder), and
-    contextual analysis (placeholder) to identify potentially malicious inputs.
+    Uses a combination of pattern matching, syntax analysis, and
+    contextual analysis to identify potentially malicious inputs.
 
     Attributes:
         patterns (list): A list of known malicious patterns (strings).
         context_window (int): The number of recent conversation turns to consider.
         conversation_history (list): Stores recent (user_input, llm_response) tuples.
     """
-    def __init__(self, context_window, patterns=None, patterns_file=None):
+    def __init__(self, context_window, patterns=None):
         """Initializes the InputValidator.
 
         Args:
             context_window (int): The number of previous messages (turns) to
                 consider for context analysis. Must be a non-negative integer.
             patterns (list, optional): A list of known malicious patterns (strings).
-                If provided, this list is used directly, ignoring `patterns_file`.
-                Defaults to None.
-            patterns_file (str, optional): Path to a file containing patterns
-                (one per line, '#' comments ignored). If provided and `patterns`
-                is None, patterns are loaded from this file.
-                If both `patterns` and `patterns_file` are None, attempts to load
-                from the default path (`PROJECT_ROOT/patterns.txt`).
+                If provided, this list is used directly. If None, patterns are loaded
+                from the path specified in the global config (`ListFiles.patterns`).
                 Defaults to None.
 
         Raises:
             ValueError: If `context_window` is not a non-negative integer.
+            KeyError: If `patterns` is None and the required path is missing in config.
+            FileNotFoundError: If the configured patterns file does not exist.
         """
         # Validate context_window first
         if not isinstance(context_window, int) or context_window < 0:
@@ -55,43 +47,29 @@ class InputValidator:
             raise ValueError("context_window must be a non-negative integer")
         self.context_window = context_window
 
+        # Load patterns if not provided directly
         if patterns is not None:
             self.patterns = list(patterns) # Ensure it's a list
             logger.info(f"InputValidator initialized with {len(self.patterns)} patterns provided directly.")
         else:
-            load_path = patterns_file if patterns_file is not None else _DEFAULT_PATTERNS_FILE
-            self.patterns = self._load_patterns_from_file(load_path)
+            try:
+                config = cfg_loader.get_config()
+                # Get path from central config
+                patterns_path = config['ListFiles']['patterns']
+            except KeyError as e:
+                logger.error(f"Missing configuration for patterns file path: 'ListFiles.patterns' not found in config. {e}")
+                raise KeyError("Missing configuration for patterns file path: 'ListFiles.patterns'") from e
+
+            # Load using the simplified utility function (expects path relative to CWD or absolute)
+            self.patterns = cfg_loader.load_list_from_file(patterns_path)
+            if not self.patterns and not os.path.exists(os.path.abspath(patterns_path)):
+                # Distinguish between empty file and file not found
+                logger.error(f"Configured patterns file not found at resolved path: {os.path.abspath(patterns_path)}")
+                # Raise FileNotFoundError if load_list returned empty AND file doesn't exist
+                raise FileNotFoundError(f"Configured patterns file not found: {patterns_path}")
+            logger.info(f"InputValidator initialized. Loaded {len(self.patterns)} patterns from configured path '{patterns_path}'.")
 
         self.conversation_history = [] # Stores (user_input, llm_response) tuples
-
-    def _load_patterns_from_file(self, filepath):
-        """Loads patterns from a file, ignoring comments and empty lines.
-
-        Args:
-            filepath (str): The absolute path to the patterns file.
-
-        Returns:
-            list: A list of pattern strings loaded from the file, or an empty
-                  list if the file cannot be read or doesn't exist.
-        """
-        patterns = []
-        absolute_filepath = os.path.abspath(filepath)
-        if not os.path.exists(absolute_filepath):
-            logger.warning(f"Patterns file not found at: {absolute_filepath}. Using empty patterns list.")
-            return []
-
-        try:
-            with open(absolute_filepath, 'r', encoding='utf-8') as f:
-                for line in f:
-                    pattern = line.strip()
-                    if pattern and not pattern.startswith('#'):
-                        patterns.append(pattern)
-            logger.info(f"InputValidator loaded {len(patterns)} patterns from {absolute_filepath}.")
-        except Exception as e:
-            logger.error(f"Failed to load patterns from {absolute_filepath}: {e}. "
-                         f"Using empty patterns list.", exc_info=True)
-            patterns = [] # Ensure empty list on error
-        return patterns
 
     def _match_patterns(self, text):
         """Checks if the text contains any known malicious patterns (case-insensitive).
@@ -126,7 +104,7 @@ class InputValidator:
         Returns:
             bool: True if suspicious syntax is found, False otherwise.
         """
-        config = config_loader.get_config() # Fetch config when needed
+        config = cfg_loader.get_config() # Use aliased import
         try:
             is_unusual = analyze_syntax(text, config)
             if is_unusual:
