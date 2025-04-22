@@ -63,7 +63,7 @@ class TestInputValidation(unittest.TestCase):
         # Mock analysis functions to return False and ensure they are called
         with patch('frogshield.input_validator.analyze_syntax', return_value=False) as mock_syntax, \
              patch('frogshield.input_validator.analyze_context', return_value=False) as mock_context, \
-             patch('frogshield.input_validator.config_loader.get_config', return_value=MOCK_TEXT_ANALYSIS_CONFIG): # Mock config access
+             patch('frogshield.input_validator.cfg_loader.get_config', return_value=MOCK_TEXT_ANALYSIS_CONFIG): # Mock config access
 
             self.assertFalse(self.validator_with_patterns.validate(legitimate_input),
                              "Incorrectly flagged legitimate input when no checks should trigger.")
@@ -73,7 +73,7 @@ class TestInputValidation(unittest.TestCase):
             mock_context.assert_called_once_with(legitimate_input, [])
 
     @patch('frogshield.input_validator.analyze_context', return_value=False) # Assume context is fine
-    @patch('frogshield.input_validator.config_loader.get_config', return_value=MOCK_TEXT_ANALYSIS_CONFIG) # Mock config
+    @patch('frogshield.input_validator.cfg_loader.get_config', return_value=MOCK_TEXT_ANALYSIS_CONFIG) # Mock config
     @patch('frogshield.input_validator.analyze_syntax') # Mock the target syntax function
     def test_syntax_analysis_integration(self, mock_analyze_syntax, mock_get_config, mock_analyze_context):
         """Verify validator correctly handles True/False from analyze_syntax.
@@ -108,7 +108,7 @@ class TestInputValidation(unittest.TestCase):
         # Expect context check to be called when pattern/syntax are False
         mock_analyze_context.assert_called_once_with(legitimate_input, [])
 
-    @patch('frogshield.input_validator.config_loader.get_config', return_value=MOCK_TEXT_ANALYSIS_CONFIG) # Mock config
+    @patch('frogshield.input_validator.cfg_loader.get_config', return_value=MOCK_TEXT_ANALYSIS_CONFIG) # Mock config
     @patch('frogshield.input_validator.analyze_syntax', return_value=False) # Assume syntax is fine
     @patch('frogshield.input_validator.analyze_context') # Mock the target context function
     def test_context_analysis_integration(self, mock_analyze_context, mock_analyze_syntax, mock_get_config):
